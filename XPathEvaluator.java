@@ -16,6 +16,7 @@ import org.antlr.v4.runtime.tree.xpath.XPath;
 public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
     LinkedList<Node> curNodes = new LinkedList<>();
     Document doc;
+
     /**
      *  take an xml file name, return an Document Object
      * @param fileName
@@ -75,7 +76,9 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
         LinkedList<Node> result = new LinkedList<>();
         for(int i = 0; i < this.curNodes.size(); i ++) {
             Node node = curNodes.get(i);
+            //System.out.println("getRoot: " + node.getNodeName());
             for(int j = 0; j < node.getChildNodes().getLength(); j ++) {
+                //System.out.println("getChild: " + node.getChildNodes().item(j).getNodeName());
                 result.add(node.getChildNodes().item(j));
             }
         }
@@ -101,6 +104,7 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
         Document xmlDoc = parseXML(fileName);
         xmlDoc.getDocumentElement().normalize();
         curNodes.add(xmlDoc);
+        //System.out.println("hehe1: " + curNodes.size());
         return visit(ctx.rp());
     }
 
@@ -110,7 +114,7 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
         Document xmlDoc = parseXML(fileName);
         xmlDoc.getDocumentElement().normalize();
         curNodes.add(xmlDoc);
-        
+
         // add all desendents
         LinkedList<Node> descendants = getAllDesc();
         this.curNodes = descendants;
@@ -121,7 +125,8 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
     @Override public LinkedList<Node> visitTagName(XPathParser.TagNameContext ctx) { 
         LinkedList<Node> res = new LinkedList<>();
         for(Node node : getAllChildren()) {
-            if(node.getNodeName() == ctx.NAME().getText()) {
+            //System.out.println("hehe3: " + node.getNodeName());
+            if(node.getNodeName().equals(ctx.NAME().getText())) {
                 res.add(node);
             }
         }
@@ -253,7 +258,7 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
         this.curNodes = original;
         for(Node resNode : visitRes) {
             if(resNode.getNodeType() == Node.TEXT_NODE) {
-                if(resNode.getTextContent() == text) {
+                if(resNode.getTextContent().equals(text)) {
                     return original;
                 }
             }

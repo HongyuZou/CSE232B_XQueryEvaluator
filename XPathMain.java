@@ -22,15 +22,17 @@ public class XPathMain {
         XPathParser parser = new XPathParser(tokenStream);
         parser.removeErrorListeners();
         ParseTree parseTree = parser.ap();
+        System.out.println(parseTree.toStringTree());
         XPathEvaluator evaluator = new XPathEvaluator();
         List<Node> res = evaluator.visit(parseTree);
-        Node resNode = evaluator.doc.createElement("res");
-        for(Node node : res) {
-            resNode.appendChild(evaluator.doc.importNode(node, true));
-        }
+        // Node resNode = evaluator.doc.createElement("res");
+        // for(Node node : res) {
+        //     resNode.appendChild(evaluator.doc.importNode(node, true));
+        // }
         
+        System.out.println(res.size());
         for (Node node : res) {
-            System.out.println(node.getNodeName());
+            System.out.println(node.getNodeName() + " " + node.getTextContent());
         }
     }
 }
