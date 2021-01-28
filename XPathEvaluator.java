@@ -198,90 +198,78 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
     // TODO: double check
     @Override public LinkedList<Node> visitRpFt(XPathParser.RpFtContext ctx) {
         LinkedList<Node> original = this.curNodes;
-        LinkedList<Node> res = new LinkedList<>();
-        for(Node node : original) {
-            this.curNodes = new LinkedList<Node>(Arrays.asList(node));
-            LinkedList<Node> visitRes = visit(ctx.rp());
-            if(visitRes.peek() != null) {
-                res.add(node);
-            }
-        }
-        this.curNodes = res;
-        return curNodes; 
+        LinkedList<Node> visitRes = visit(ctx.rp());
+        this.curNodes = original;
+        return visitRes; 
     }
 
     // TODO: not sure if result should contains duplicates
     @Override public LinkedList<Node>  visitEq1(XPathParser.Eq1Context ctx) { 
         LinkedList<Node> original = this.curNodes;
-        LinkedList<Node> res = new LinkedList<>();
-        Set<Node> dedupSet = new HashSet<>();
 
-        // add result nodes to dedup set
-        for(Node node : original) {
-            this.curNodes = new LinkedList<Node>(Arrays.asList(node));
-            LinkedList<Node> visitRes0 = visit(ctx.rp(0));
-            this.curNodes = new LinkedList<Node>(Arrays.asList(node));
-            LinkedList<Node> visitRes1 = visit(ctx.rp(1));
+        // return cur set of nodes after find one pair of elements equal
+        LinkedList<Node> visitRes0 = visit(ctx.rp(0));
+        this.curNodes = original;
+        LinkedList<Node> visitRes1 = visit(ctx.rp(1));
 
-            for(Node resNode0 : visitRes0) {
-                for(Node resNode1 : visitRes1) {
-                    if(resNode0.isEqualNode(resNode1)) {
-                        dedupSet.add(resNode0);
-                    }
+        for(Node resNode0 : visitRes0) {
+            for(Node resNode1 : visitRes1) {
+                if(resNode0.isEqualNode(resNode1)) {
+                    return original;
                 }
             }
         }
 
-        // add nodes from set back to res
-        for(Node node : dedupSet) {
-            res.add(node);    
+        return new LinkedList<>();  
+    }
+
+    // TODO: not sure if result should contains duplicates
+    @Override public LinkedList<Node>  visitIs(XPathParser.IsContext ctx) { 
+        LinkedList<Node> original = this.curNodes;
+
+        // return cur set of nodes after find one pair of elements equal
+        LinkedList<Node> visitRes0 = visit(ctx.rp(0));
+        this.curNodes = original;
+        LinkedList<Node> visitRes1 = visit(ctx.rp(1));
+
+        for(Node resNode0 : visitRes0) {
+            for(Node resNode1 : visitRes1) {
+                if(resNode0.isSameNode(resNode1)) {
+                    return original;
+                }
+            }
         }
 
-        this.curNodes = res;
-        return curNodes;  
+        return new LinkedList<>();  
+    }
+
+    @Override public LinkedList<Node> visitParenFt(XPathParser.ParenFtContext ctx) { 
+        LinkedList<Node> visitRes = visit(ctx.f()); 
+        return visitRes; 
     }
 
     // TODO: double check
     @Override public LinkedList<Node> visitOr(XPathParser.OrContext ctx) { 
-        Set<Node> dedupSet = new HashSet<>(visit(ctx.f(0)));
-        dedupSet.addAll(visit(ctx.f(1)));
-        LinkedList<Node> res= new LinkedList<>(dedupSet);
-        return res;
+        if(visit(ctx.f(0)).isEmpty() && visit(ctx.f(1)).isEmpty()) {
+            return new LinkedList<Node>();
+        }
+        return curNodes;
     }
 
     // TODO: double check
     @Override public LinkedList<Node> visitAnd(XPathParser.AndContext ctx) { 
-        Set<Node> dedupSet0 = new HashSet<>(visit(ctx.f(0)));
-        Set<Node> dedupSet1 = new HashSet<>(visit(ctx.f(1)));
-        LinkedList<Node> res= new LinkedList<>();
-        
-        // add nodes both exists in visit(f0) visit(f1) to the result set
-        for(Node node0 : dedupSet0) {
-            for(Node node1 : dedupSet1) {
-                if (node0.isEqualNode(node1)) {
-                    res.add(node0);
-                }
-            }
+        if(visit(ctx.f(0)).isEmpty() || visit(ctx.f(1)).isEmpty()) {
+            return new LinkedList<Node>();
         }
-      
-        return res;
+        return curNodes;
     }
 
      // TODO: double check
-     @Override public LinkedList<Node> visitNot(XPathParser.NotContext ctx) { 
-        Set<Node> dedupSet = new HashSet<>(visit(ctx.f()));
-        
-        // remove nodes that are in the curNodes from visit result
-        for(Node node0 : curNodes) {
-            for(Node node1 : dedupSet) {
-                if(node0.isEqualNode(node1)) {
-                    dedupSet.remove(node1);
-                }
-            }
+    @Override public LinkedList<Node> visitNot(XPathParser.NotContext ctx) { 
+        if(!visit(ctx.f()).isEmpty()) {
+            return new LinkedList<Node>();
         }
-       
-        LinkedList<Node> res= new LinkedList<>(dedupSet);
-        return res;
+        return curNodes;
     }
 
 
