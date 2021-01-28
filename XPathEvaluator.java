@@ -15,7 +15,7 @@ import org.antlr.v4.runtime.tree.xpath.XPath;
     
 public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
     LinkedList<Node> curNodes = new LinkedList<>();
-
+    Document doc;
     /**
      *  take an xml file name, return an Document Object
      * @param fileName
@@ -37,6 +37,7 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
         Document xmlDoc = null;
         try {
             xmlDoc = builder.parse(xmlFile);
+            doc = xmlDoc;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -82,7 +83,7 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
     }
 
     /**
-     * Get all direct parent of curNodes
+     * Get all direct parent of curNodes (duplicates?)
      * @return children
      */
     private LinkedList<Node> getAllParent() {
@@ -172,9 +173,10 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
     }
 
     // modified rp // rp
+    // is short for /descendant-or-self::node()/
     @Override public LinkedList<Node> visitIndirectChildRP(XPathParser.IndirectChildRPContext ctx) { 
         curNodes = visit(ctx.rp(0));
-        curNodes = getAllDesc();
+        curNodes.addAll(getAllDesc());
         curNodes = visit(ctx.rp(1));
         return curNodes;
     }
@@ -211,7 +213,7 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
         LinkedList<Node> visitRes0 = visit(ctx.rp(0));
         this.curNodes = original;
         LinkedList<Node> visitRes1 = visit(ctx.rp(1));
-
+        this.curNodes = original;
         for(Node resNode0 : visitRes0) {
             for(Node resNode1 : visitRes1) {
                 if(resNode0.isEqualNode(resNode1)) {
@@ -219,9 +221,47 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
                 }
             }
         }
-
+  
         return new LinkedList<>();  
     }
+
+    @Override public LinkedList<Node>  visitEq2(XPathParser.Eq2Context ctx) { 
+        LinkedList<Node> original = this.curNodes;
+
+        // return cur set of nodes after find one pair of elements equal
+        LinkedList<Node> visitRes0 = visit(ctx.rp(0));
+        this.curNodes = original;
+        LinkedList<Node> visitRes1 = visit(ctx.rp(1));
+        this.curNodes = original;
+        for(Node resNode0 : visitRes0) {
+            for(Node resNode1 : visitRes1) {
+                if(resNode0.isEqualNode(resNode1)) {
+                    return original;
+                }
+            }
+        }
+  
+        return new LinkedList<>();  
+    }
+
+    @Override public LinkedList<Node>  visitStr(XPathParser.StrContext ctx) { 
+        LinkedList<Node> original = this.curNodes;
+        String text = ctx.NAME().getText();
+
+        // return cur set of nodes after find one pair of elements equal
+        LinkedList<Node> visitRes = visit(ctx.rp());
+        this.curNodes = original;
+        for(Node resNode : visitRes) {
+            if(resNode.getNodeType() == Node.TEXT_NODE) {
+                if(resNode.getTextContent() == text) {
+                    return original;
+                }
+            }
+        }
+  
+        return new LinkedList<>();  
+    }
+
 
     // TODO: not sure if result should contains duplicates
     @Override public LinkedList<Node>  visitIs(XPathParser.IsContext ctx) { 
@@ -231,7 +271,7 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
         LinkedList<Node> visitRes0 = visit(ctx.rp(0));
         this.curNodes = original;
         LinkedList<Node> visitRes1 = visit(ctx.rp(1));
-
+        this.curNodes = original;
         for(Node resNode0 : visitRes0) {
             for(Node resNode1 : visitRes1) {
                 if(resNode0.isSameNode(resNode1)) {

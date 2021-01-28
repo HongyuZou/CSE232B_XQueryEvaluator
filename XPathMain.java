@@ -15,17 +15,23 @@ import org.w3c.dom.Node;
 
 public class XPathMain {
     public static void main(String[] args) throws IOException {
-        String fileName = "test1.txt";
+        // "Java -jar CSE-232B-M1.jar milestone1_input_queries.txt"
+        String fileName = args[0];
+        System.out.println(fileName); 
         InputStream fileStream = new FileInputStream(fileName);
-        CharStream charStream = CharStreams.fromStream(fileStream);
-        XPathLexer lexer = new XPathLexer(charStream); 
-        CommonTokenStream tokenStream = new CommonTokenStream((TokenSource)lexer);
+        ANTLRInputStream charStream = new ANTLRInputStream(fileStream);
+        XPathLexer lexer = new XPathLexer(charStream);
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
         XPathParser parser = new XPathParser((TokenStream)tokenStream);
         parser.removeErrorListeners();
         ParseTree parseTree = parser.ap();
         XPathEvaluator evaluator = new XPathEvaluator();
         List<Node> res = evaluator.visit(parseTree);
-
+        Node resNode = evaluator.doc.createElement("res");
+        for(Node node : res) {
+            resNode.appendChild(evaluator.doc.importNode(node, true));
+        }
+        
         for (Node node : res) {
             System.out.println(node.getNodeName());
         }
