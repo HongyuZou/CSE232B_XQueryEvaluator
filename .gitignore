@@ -3,4 +3,5 @@
 
 # IDE config
 .idea
-.vscode
+.idea/*
+.vscode/
