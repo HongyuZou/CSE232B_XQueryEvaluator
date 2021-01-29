@@ -5,40 +5,33 @@ import java.io.File;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import javax.xml.parsers.ParserConfigurationException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.antlr.v4.runtime.tree.xpath.XPath;
 
     
 public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
     LinkedList<Node> curNodes = new LinkedList<>();
-    Document doc;
 
     /**
-     *  take an xml file name, return an Document Object
+     * Take an xml file name, return an Document Object
      * @param fileName
-     * @return
+     * @return parsed document
      */
     private Document parseXML(String fileName) {
-        File xmlFile = new File(fileName);
-        DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
-
-        // build document builder
-        DocumentBuilder builder = null;
-        try {
-            builder = builderFactory.newDocumentBuilder();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        
-        // parse xml file
         Document xmlDoc = null;
+
         try {
+            File xmlFile = new File(fileName);
+
+            // init builder
+            DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = builderFactory.newDocumentBuilder();
+
+            // parse file
             xmlDoc = builder.parse(xmlFile);
-            doc = xmlDoc;
+            xmlDoc.getDocumentElement().normalize();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -51,20 +44,20 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
      * @return descendents
      */
     private LinkedList<Node> getAllDesc() {
-        LinkedList<Node> result = new LinkedList<>();
-        for(int i = 0; i < this.curNodes.size(); i ++) {
-            Node node = curNodes.get(i);
+        Set<Node> result = new HashSet<>();
+        for(int i = 0; i < this.curNodes.size(); i++) {
+            Node node = this.curNodes.get(i);
             getDescHelper(result, node);
         }
-        return result;
+        return new LinkedList<>(result);
     }
 
-    private void getDescHelper(List<Node> res, Node node) {
-        NodeList child = node.getChildNodes();
-        for(int i = 0; i < child.getLength(); i ++) {
-            Node temp = child.item(i);
-            res.add(temp);
-            getDescHelper(res, temp);
+    private void getDescHelper(Set<Node> result, Node node) {
+        NodeList children = node.getChildNodes();
+        for(int i = 0; i < children.getLength(); i++) {
+            Node child = children.item(i);
+            result.add(child);
+            getDescHelper(result, child);
         }
     }
 
@@ -73,38 +66,41 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
      * @return children
      */
     private LinkedList<Node> getAllChildren() {
-        LinkedList<Node> result = new LinkedList<>();
+        Set<Node> result = new HashSet<>();
         for(int i = 0; i < this.curNodes.size(); i ++) {
-            Node node = curNodes.get(i);
-            //System.out.println("getRoot: " + node.getNodeName());
-            for(int j = 0; j < node.getChildNodes().getLength(); j ++) {
-                //System.out.println("getChild: " + node.getChildNodes().item(j).getNodeName());
-                result.add(node.getChildNodes().item(j));
+            NodeList children = this.curNodes.get(i).getChildNodes();
+            for(int j = 0; j < children.getLength(); j ++) {
+                result.add(children.item(j));
             }
         }
-        return result;
+        return new LinkedList<>(result);
     }
 
     /**
-     * Get all direct parent of curNodes (duplicates?)
+     * Get all direct parent of curNodes
      * @return children
      */
     private LinkedList<Node> getAllParent() {
-        LinkedList<Node> result = new LinkedList<>();
-        for(int i = 0; i < this.curNodes.size(); i ++) {
-            Node node = curNodes.get(i);   
+        // Use set to prevent duplicates
+        Set<Node> result = new HashSet<>();
+        for(int i = 0; i < this.curNodes.size(); i++) {
+            Node node = curNodes.get(i);
             result.add(node.getParentNode());
         }
-        return result;
+        return new LinkedList<>(result);
     }
 
     @Override 
     public LinkedList<Node> visitDirectChild(XPathParser.DirectChildContext ctx) { 
         String fileName = ctx.FILENAME().getText();
         Document xmlDoc = parseXML(fileName);
-        xmlDoc.getDocumentElement().normalize();
-        curNodes.add(xmlDoc);
-        //System.out.println("hehe1: " + curNodes.size());
+
+        // Error condition
+        if (xmlDoc == null) {
+            return new LinkedList<>();
+        }
+        
+        this.curNodes.add(xmlDoc);
         return visit(ctx.rp());
     }
 
@@ -112,30 +108,37 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
     public LinkedList<Node> visitIndirectChild(XPathParser.IndirectChildContext ctx) { 
         String fileName = ctx.FILENAME().getText();
         Document xmlDoc = parseXML(fileName);
-        xmlDoc.getDocumentElement().normalize();
-        curNodes.add(xmlDoc);
+
+        // Error condition
+        if (xmlDoc == null) {
+            return new LinkedList<>();
+        }
+
+        this.curNodes.add(xmlDoc);
 
         // add all desendents
-        LinkedList<Node> descendants = getAllDesc();
-        this.curNodes = descendants;
+        this.curNodes.addAll(getAllDesc());
+
         return visit(ctx.rp()); 
     }
 
     // modified
     @Override public LinkedList<Node> visitTagName(XPathParser.TagNameContext ctx) { 
         LinkedList<Node> res = new LinkedList<>();
-        for(Node node : getAllChildren()) {
-            //System.out.println("hehe3: " + node.getNodeName());
-            if(node.getNodeName().equals(ctx.NAME().getText())) {
+        for (Node node: getAllChildren()) {
+            if (node.getNodeName().equals(ctx.NAME().getText())) {
                 res.add(node);
             }
         }
-        return res; 
+        this.curNodes = res;
+        return res;
     }
 
     @Override 
     public LinkedList<Node> visitAll(XPathParser.AllContext ctx) { 
-        return getAllChildren();
+        LinkedList<Node> res = getAllChildren();
+        this.curNodes = res;
+        return res;
     }
 
     @Override public LinkedList<Node> visitCurrent(XPathParser.CurrentContext ctx) { 
@@ -143,26 +146,32 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
     }
 
     @Override public LinkedList<Node> visitParent(XPathParser.ParentContext ctx) { 
-        return getAllParent(); 
+        LinkedList<Node> res = getAllParent();
+        this.curNodes = res;
+        return res;
     }
 
+    // TODO: Need to filter non-text node or not?
     @Override public LinkedList<Node> visitText(XPathParser.TextContext ctx) { 
-        return getAllChildren();
+        LinkedList<Node> res = getAllChildren();
+        this.curNodes = res;
+        return res;
     }
 
     @Override public LinkedList<Node> visitAttr(XPathParser.AttrContext ctx) { 
         String attrName = ctx.NAME().getText();
         LinkedList<Node> res = new LinkedList<>();
-        for(int i = 0; i < curNodes.size(); i ++) {
+        for(int i = 0; i < this.curNodes.size(); i ++) {
             Node node = curNodes.get(i);
-            if(node.hasAttributes()) {
+            if (node.hasAttributes()) {
                 String attribute = ((Element)node).getAttribute(attrName);
-                if(attribute.length() > 0) {
+                if (attribute.length() > 0) {
                     res.add(node);
                 }
             }
         }
-        
+
+        this.curNodes = res;
         return res; 
     }
 
@@ -172,33 +181,32 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
 
     // modified rp / rp
     @Override public LinkedList<Node> visitDirectChildRP(XPathParser.DirectChildRPContext ctx) { 
-        curNodes = visit(ctx.rp(0));
-        curNodes = visit(ctx.rp(1)); 
-        return curNodes; 
+        // Update curNodes with visit rp 0
+        visit(ctx.rp(0));
+        return visit(ctx.rp(1)); 
     }
 
     // modified rp // rp
     // is short for /descendant-or-self::node()/
     @Override public LinkedList<Node> visitIndirectChildRP(XPathParser.IndirectChildRPContext ctx) { 
-        curNodes = visit(ctx.rp(0));
-        curNodes.addAll(getAllDesc());
-        curNodes = visit(ctx.rp(1));
-        return curNodes;
+        visit(ctx.rp(0));
+        this.curNodes.addAll(getAllDesc());
+        return visit(ctx.rp(1));
     }
 
     // modified rp [ f ]
     @Override public LinkedList<Node> visitFilter(XPathParser.FilterContext ctx) { 
-        curNodes = visit(ctx.rp());
-        return visit(ctx.f()); 
+        visit(ctx.rp());
+        return visit(ctx.f());
     }
 
     @Override public LinkedList<Node> visitConcat(XPathParser.ConcatContext ctx) { 
-        LinkedList<Node> res = new LinkedList<>();
+        Set<Node> res = new HashSet<>();
         LinkedList<Node> original = this.curNodes;
         res.addAll(visit(ctx.rp(0)));
-        curNodes = original;
+        this.curNodes = original;
         res.addAll(visit(ctx.rp(1)));
-        curNodes = res;
+        this.curNodes = new LinkedList<>(res);
         return curNodes;
     }
 
@@ -211,7 +219,7 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
     }
 
     // TODO: not sure if result should contains duplicates
-    @Override public LinkedList<Node>  visitEq1(XPathParser.Eq1Context ctx) { 
+    @Override public LinkedList<Node> visitEq1(XPathParser.Eq1Context ctx) { 
         LinkedList<Node> original = this.curNodes;
 
         // return cur set of nodes after find one pair of elements equal
@@ -230,7 +238,7 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
         return new LinkedList<>();  
     }
 
-    @Override public LinkedList<Node>  visitEq2(XPathParser.Eq2Context ctx) { 
+    @Override public LinkedList<Node> visitEq2(XPathParser.Eq2Context ctx) { 
         LinkedList<Node> original = this.curNodes;
 
         // return cur set of nodes after find one pair of elements equal
