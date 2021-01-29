@@ -197,7 +197,19 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
     // modified rp [ f ]
     @Override public LinkedList<Node> visitFilter(XPathParser.FilterContext ctx) { 
         visit(ctx.rp());
-        return visit(ctx.f());
+        LinkedList<Node> original = this.curNodes;
+        LinkedList<Node> res = new LinkedList<>();
+        for (Node n : original) {
+            this.curNodes = new LinkedList<>(List.of(n));
+            // treat f as boolean
+            if (!visit(ctx.f()).isEmpty()) {
+                res.add(n);
+            }
+        }
+
+        this.curNodes = res;
+
+        return res;
     }
 
     @Override public LinkedList<Node> visitConcat(XPathParser.ConcatContext ctx) { 
@@ -210,17 +222,13 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
         return curNodes;
     }
 
-    // TODO: double check
     @Override public LinkedList<Node> visitRpFt(XPathParser.RpFtContext ctx) {
-        LinkedList<Node> original = this.curNodes;
-        LinkedList<Node> visitRes = visit(ctx.rp());
-        this.curNodes = original;
-        return visitRes; 
+        return visit(ctx.rp()); 
     }
 
-    // TODO: not sure if result should contains duplicates
     @Override public LinkedList<Node> visitEq1(XPathParser.Eq1Context ctx) { 
         LinkedList<Node> original = this.curNodes;
+        LinkedList<Node> res = new LinkedList<>();
 
         // return cur set of nodes after find one pair of elements equal
         LinkedList<Node> visitRes0 = visit(ctx.rp(0));
@@ -230,16 +238,17 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
         for(Node resNode0 : visitRes0) {
             for(Node resNode1 : visitRes1) {
                 if(resNode0.isEqualNode(resNode1)) {
-                    return original;
+                    res.add(resNode0);
                 }
             }
         }
   
-        return new LinkedList<>();  
+        return res;
     }
 
     @Override public LinkedList<Node> visitEq2(XPathParser.Eq2Context ctx) { 
         LinkedList<Node> original = this.curNodes;
+        LinkedList<Node> res = new LinkedList<>();
 
         // return cur set of nodes after find one pair of elements equal
         LinkedList<Node> visitRes0 = visit(ctx.rp(0));
@@ -249,26 +258,26 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
         for(Node resNode0 : visitRes0) {
             for(Node resNode1 : visitRes1) {
                 if(resNode0.isEqualNode(resNode1)) {
-                    return original;
+                    res.add(resNode0);
                 }
             }
         }
   
-        return new LinkedList<>();  
+        return res;
     }
 
-    @Override public LinkedList<Node>  visitStr(XPathParser.StrContext ctx) { 
+    @Override public LinkedList<Node> visitStr(XPathParser.StrContext ctx) {
         LinkedList<Node> original = this.curNodes;
+        LinkedList<Node> res = new LinkedList<>();
+
         String text = ctx.NAME().getText();
 
         // return cur set of nodes after find one pair of elements equal
         LinkedList<Node> visitRes = visit(ctx.rp());
         this.curNodes = original;
         for(Node resNode : visitRes) {
-            if(resNode.getNodeType() == Node.TEXT_NODE) {
-                if(resNode.getTextContent().equals(text)) {
-                    return original;
-                }
+            if(resNode.getNodeType() == Node.TEXT_NODE && resNode.getTextContent().equals(text)) {
+                res.add(resNode);
             }
         }
   
@@ -276,9 +285,9 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
     }
 
 
-    // TODO: not sure if result should contains duplicates
-    @Override public LinkedList<Node>  visitIs(XPathParser.IsContext ctx) { 
+    @Override public LinkedList<Node> visitIs(XPathParser.IsContext ctx) { 
         LinkedList<Node> original = this.curNodes;
+        LinkedList<Node> res = new LinkedList<>();
 
         // return cur set of nodes after find one pair of elements equal
         LinkedList<Node> visitRes0 = visit(ctx.rp(0));
@@ -288,41 +297,36 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
         for(Node resNode0 : visitRes0) {
             for(Node resNode1 : visitRes1) {
                 if(resNode0.isSameNode(resNode1)) {
-                    return original;
+                    res.add(resNode0);
                 }
             }
         }
 
-        return new LinkedList<>();  
+        return res;  
     }
 
     @Override public LinkedList<Node> visitParenFt(XPathParser.ParenFtContext ctx) { 
-        LinkedList<Node> visitRes = visit(ctx.f()); 
-        return visitRes; 
+        return visit(ctx.f());
     }
 
-    // TODO: double check
-    @Override public LinkedList<Node> visitOr(XPathParser.OrContext ctx) { 
-        if(visit(ctx.f(0)).isEmpty() && visit(ctx.f(1)).isEmpty()) {
-            return new LinkedList<Node>();
-        }
-        return curNodes;
+    @Override public LinkedList<Node> visitOr(XPathParser.OrContext ctx) {
+        LinkedList<Node> res = new LinkedList<>();
+        res.addAll(visit(ctx.f(0)));
+        res.addAll(visit(ctx.f(1)));
+        return res;
     }
 
-    // TODO: double check
-    @Override public LinkedList<Node> visitAnd(XPathParser.AndContext ctx) { 
-        if(visit(ctx.f(0)).isEmpty() || visit(ctx.f(1)).isEmpty()) {
-            return new LinkedList<Node>();
-        }
-        return curNodes;
+    @Override public LinkedList<Node> visitAnd(XPathParser.AndContext ctx) {
+        Set<Node> res = new HashSet<>();
+        res.addAll(visit(ctx.f(0)));
+        res.retainAll(visit(ctx.f(1)));
+        return new LinkedList<>(res);
     }
 
-     // TODO: double check
     @Override public LinkedList<Node> visitNot(XPathParser.NotContext ctx) { 
-        if(!visit(ctx.f()).isEmpty()) {
-            return new LinkedList<Node>();
-        }
-        return curNodes;
+        Set<Node> res = new HashSet<>(this.curNodes);
+        res.removeAll(visit(ctx.f()));
+        return new LinkedList<>(res);
     }
 
 
