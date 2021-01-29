@@ -26,8 +26,8 @@ public class XPathMain {
         // }
         
         System.out.println(res.size());
-        for (Node node : res) {
-            System.out.println(node.getNodeName() + " " + node.getTextContent());
-        }
+        // for (Node node : res) {
+        //     System.out.println(node.getNodeName() + " " + node.getTextContent());
+        // }
     }
 }

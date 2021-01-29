@@ -281,7 +281,7 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
             }
         }
   
-        return new LinkedList<>();  
+        return res;  
     }
 
 
@@ -306,9 +306,10 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
     }
 
     @Override public LinkedList<Node> visitParenFt(XPathParser.ParenFtContext ctx) { 
-        return visit(ctx.f());
+        return visit(ctx.f()); 
     }
 
+    // TODO: double check
     @Override public LinkedList<Node> visitOr(XPathParser.OrContext ctx) {
         LinkedList<Node> res = new LinkedList<>();
         res.addAll(visit(ctx.f(0)));
@@ -316,18 +317,21 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
         return res;
     }
 
-    @Override public LinkedList<Node> visitAnd(XPathParser.AndContext ctx) {
-        Set<Node> res = new HashSet<>();
+    // TODO: double check
+    @Override public LinkedList<Node> visitAnd(XPathParser.AndContext ctx) { 
+        LinkedList<Node> res = new LinkedList<>();
+        if(visit(ctx.f(0)).isEmpty() || visit(ctx.f(1)).isEmpty()) {
+            return new LinkedList<>();
+        }
         res.addAll(visit(ctx.f(0)));
-        res.retainAll(visit(ctx.f(1)));
-        return new LinkedList<>(res);
+        res.addAll(visit(ctx.f(1)));
+        return res;
     }
 
     @Override public LinkedList<Node> visitNot(XPathParser.NotContext ctx) { 
-        Set<Node> res = new HashSet<>(this.curNodes);
-        res.removeAll(visit(ctx.f()));
-        return new LinkedList<>(res);
+        if(!visit(ctx.f()).isEmpty()) {
+            return new LinkedList<>();
+        }
+        return this.curNodes;
     }
-
-
 }
