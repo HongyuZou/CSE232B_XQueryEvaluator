@@ -13,6 +13,11 @@ import org.w3c.dom.NodeList;
     
 public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
     LinkedList<Node> curNodes = new LinkedList<>();
+    Document xmlDoc = null;
+
+    public Document getXmlDoc() {
+        return this.xmlDoc;
+    }
 
     /**
      * Take an xml file name, return an Document Object
@@ -20,7 +25,6 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
      * @return parsed document
      */
     private Document parseXML(String fileName) {
-        Document xmlDoc = null;
 
         try {
             File xmlFile = new File(fileName);

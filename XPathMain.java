@@ -4,11 +4,34 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
 import java.util.*;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.dom.DOMSource; 
+import javax.xml.transform.stream.StreamResult;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+
 import org.w3c.dom.Node;
 
 public class XPathMain {
-    public static void main(String[] args) throws IOException {
+    public static void trimWhitespace(Node node)
+    {
+        NodeList children = node.getChildNodes();
+        for(int i = 0; i < children.getLength(); ++i) {
+            Node child = children.item(i);
+            if(child.getNodeType() == Node.TEXT_NODE) {
+                child.setTextContent(child.getTextContent().trim());
+            }
+            trimWhitespace(child);
+        }
+    }
+    public static void main(String[] args) throws Exception {
         // "Java -jar CSE-232B-M1.jar milestone1_input_queries.txt"
         String fileName = args[0];
         CharStream charStream = CharStreams.fromFileName(fileName);
@@ -17,17 +40,34 @@ public class XPathMain {
         XPathParser parser = new XPathParser(tokenStream);
         parser.removeErrorListeners();
         ParseTree parseTree = parser.ap();
-        System.out.println(parseTree.toStringTree());
         XPathEvaluator evaluator = new XPathEvaluator();
         List<Node> res = evaluator.visit(parseTree);
-        // Node resNode = evaluator.doc.createElement("res");
-        // for(Node node : res) {
-        //     resNode.appendChild(evaluator.doc.importNode(node, true));
-        // }
+
+        Document resDoc = DocumentBuilderFactory
+                          .newInstance()
+                          .newDocumentBuilder()
+                          .newDocument();
         
-        System.out.println(res.size());
-        // for (Node node : res) {
-        //     System.out.println(node.getNodeName() + " " + node.getTextContent());
-        // }
+        // create result node
+        Document xmlDoc = evaluator.getXmlDoc();
+        Node result = xmlDoc.createElement("query_result");
+        for(Node node : res) {
+            Node importedNode = xmlDoc.importNode(node, true);
+            result.appendChild(importedNode);
+        }
+
+        // Use a Transformer for output
+        Node outputNode = resDoc.importNode(result, true);
+        trimWhitespace(outputNode);
+        resDoc.appendChild(outputNode);
+        TransformerFactory tFactory =
+        TransformerFactory.newInstance();
+        Transformer transformer = 
+        tFactory.newTransformer();
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+
+        DOMSource source = new DOMSource(resDoc);
+        StreamResult streamRes = new StreamResult(System.out);
+        transformer.transform(source, streamRes);
     }
 }
