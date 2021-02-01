@@ -55,7 +55,8 @@ public class XPathMain {
             Node importedNode = xmlDoc.importNode(node, true);
             result.appendChild(importedNode);
         }
-
+        
+        //System.out.println(res.size());
         // Use a Transformer for output
         Node outputNode = resDoc.importNode(result, true);
         trimWhitespace(outputNode);

@@ -1,7 +1,7 @@
 grammar XPath;
 
-ap : 'doc("'FILENAME'")/' rp    #directChild
-   | 'doc("'FILENAME'")//' rp   #indirectChild
+ap : 'doc("'NAME'")/' rp    #directChild
+   | 'doc("'NAME'")//' rp   #indirectChild
    ;
 
 rp : NAME                     #tagName
@@ -19,7 +19,7 @@ rp : NAME                     #tagName
 
 f : rp                        #rpFt
   | rp '=' rp                 #eq1
-  | rp '=' '"'NAME'"'         #str
+  | rp '=' STR                #str
   | rp 'eq' rp                #eq2
   | rp IS rp                  #is
   | '(' f ')'                 #parenFt
@@ -28,9 +28,8 @@ f : rp                        #rpFt
   | 'not' f                   #not
   ;
 
-EQUAL : '=' | 'eq';
 IS : '==' | 'is';
-NAME: [a-zA-Z0-9]+;
-STRING : .*?;
-FILENAME : [a-zA-Z0-9._]+;
+NAME: [a-zA-Z0-9._]+;
+//FILENAME : [a-zA-Z0-9._]+;
+STR: '"' [a-zA-Z0-9._!,':? -]+ '"'; //[a-zA-Z0-9._!,':?]+;
 WS : [ \t\r\n]+ -> skip;

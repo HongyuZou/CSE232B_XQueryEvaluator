@@ -96,7 +96,7 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
 
     @Override 
     public LinkedList<Node> visitDirectChild(XPathParser.DirectChildContext ctx) { 
-        String fileName = ctx.FILENAME().getText();
+        String fileName = ctx.NAME().getText();
         Document xmlDoc = parseXML(fileName);
 
         // Error condition
@@ -110,7 +110,7 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
 
     @Override
     public LinkedList<Node> visitIndirectChild(XPathParser.IndirectChildContext ctx) { 
-        String fileName = ctx.FILENAME().getText();
+        String fileName = ctx.NAME().getText();
         Document xmlDoc = parseXML(fileName);
 
         // Error condition
@@ -274,8 +274,8 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
         LinkedList<Node> original = this.curNodes;
         LinkedList<Node> res = new LinkedList<>();
 
-        String text = ctx.NAME().getText();
-
+        String text = ctx.STR().getText();
+        text = text.substring(1, text.length() - 1);
         // return cur set of nodes after find one pair of elements equal
         LinkedList<Node> visitRes = visit(ctx.rp());
         this.curNodes = original;

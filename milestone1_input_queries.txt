@@ -1,1 +1,1 @@
-doc("j_caesar.xml")//PERSONA
+doc("j_caesar.xml")//LINE[text() = "Peace, ho! Caesar speaks."]

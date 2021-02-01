@@ -8,3 +8,8 @@ doc("j_caesar.xml")//ACT[SCENE [SPEECH/SPEAKER/text() = "CAESAR" and SPEECH/SPEA
 doc("j_caesar.xml")//ACT[SCENE [SPEECH/SPEAKER/text() = "CAESAR"] [SPEECH/SPEAKER/text() = "BRUTUS"]]
 # Find the acts in which CAESAR no longer appears:
 doc("j_caesar.xml")//ACT[not .//SPEAKER/text() = "CAESAR"]
+
+doc("j_caesar.xml")/PLAY/PERSONAE[./TITLE/text() = "Dramatis Personae"]
+doc("j_caesar.xml")//LINE[text() = "Farewell, Cicero."]
+doc("j_caesar.xml")//PLAY/TITLE , //PLAY/FM
+doc("j_caesar.xml")//LINE[text() = "Peace, ho! Caesar speaks."]
