@@ -1,7 +1,7 @@
 grammar XPath;
 
-ap : 'doc("'NAME'")/' rp    #directChild
-   | 'doc("'NAME'")//' rp   #indirectChild
+ap : DOC '("' NAME '")' '/' rp    #directChild
+   | DOC '("' NAME '")' '//' rp   #indirectChild
    ;
 
 rp : NAME                     #tagName
@@ -28,6 +28,7 @@ f : rp                        #rpFt
   | 'not' f                   #not
   ;
 
+DOC: 'document' | 'doc';
 IS : '==' | 'is';
 NAME: [a-zA-Z0-9._]+;
 //FILENAME : [a-zA-Z0-9._]+;

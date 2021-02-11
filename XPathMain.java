@@ -31,6 +31,20 @@ public class XPathMain {
             trimWhitespace(child);
         }
     }
+
+    public static LinkedList<Node> evaluateXPath(LinkedList<Node> curNodes, String ap) {
+        CharStream charStream = CharStreams.fromString(ap);
+        XPathLexer lexer = new XPathLexer(charStream);
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        XPathParser parser = new XPathParser(tokenStream);
+        parser.removeErrorListeners();
+        ParseTree parseTree = parser.ap();
+        XPathEvaluator evaluator = new XPathEvaluator();
+        evaluator.curNodes = curNodes;
+        LinkedList<Node> res = evaluator.visit(parseTree);
+        return res;
+    }
+
     public static void main(String[] args) throws Exception {
         // "Java -jar CSE-232B-M1.jar milestone1_input_queries.txt"
         String fileName = args[0];
