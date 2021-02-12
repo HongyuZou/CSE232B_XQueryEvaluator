@@ -88,13 +88,51 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
         return new LinkedList<>(Arrays.asList(tagNode));
     }
     
-    // for a in XQ1, for b in XQ2, 
+    @Override 
+    public LinkedList<Node> visitXqClause(XQueryParser.XqClauseContext ctx) { 
+        LinkedList<Node> res = new LinkedList<Node>();
+        visitXqClauseHelper(res, 0, ctx.forclause().xq().size(), ctx);
+        return res;
+    }
+
+    public void visitXqClauseHelper(LinkedList<Node> res, int varIdx, int forVarsCnt, XQueryParser.XqClauseContext ctx) {
+        // finished for, start evaluate let, where and return
+        if(varIdx > forVarsCnt - 1) {
+            if(ctx.letclause() != null) {
+                visit(ctx.letclause());
+            }
+
+            if(ctx.whereclause() == null || visit(ctx.whereclause()).size() != 0) {
+                res.addAll(visit(ctx.returnclause()));
+            }
+
+            return;
+        }
+
+        // recursively check for variables
+        LinkedList<Node> curRes = visit(ctx.forclause().xq(varIdx));
+        for(Node node : curRes) {
+            HashMap<String, LinkedList<Node>> curContext = new HashMap<>(this.context);
+            this.contextStack.push(curContext);
+            this.context.put(ctx.forclause().var(varIdx).getText(), new LinkedList<>(Arrays.asList(node)));
+            visitXqClauseHelper(res, varIdx + 1, ctx.forclause().xq().size(), ctx);
+            this.contextStack.pop();
+        }
+
+        return;
+    }
+
+    @Override
+    public LinkedList<Node> visitXqLet(XQueryParser.XqLetContext ctx) {
+        HashMap<String, LinkedList<Node>> originalContext = new HashMap<>(this.context);
+        this.contextStack.push(originalContext);
+        LinkedList<Node> res = visitChildren(ctx);
+        this.contextStack.pop();
+        return res;
+    }
+
     @Override 
     public LinkedList<Node> visitForclause(XQueryParser.ForclauseContext ctx) { 
-        for(int i = 0; i < ctx.var().size(); i ++) {
-            LinkedList<Node> res = visit(ctx.xq(i));
-            this.context.put(ctx.var(i).getText(), res);
-        }
         return null;
     }
 
@@ -108,11 +146,30 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
     }
 
     @Override
-    public LinkedList<Node> visitXqLet(XQueryParser.XqLetContext ctx) {
-        HashMap<String, LinkedList<Node>> originalContext = new HashMap<>(this.context);
-        this.contextStack.push(originalContext);
-        LinkedList<Node> res = visitChildren(ctx);
-        this.contextStack.pop();
+    public LinkedList<Node> visitWhereclause(XQueryParser.WhereclauseContext ctx) { 
+        return visit(ctx.cond());
+    }
+
+    @Override
+    public LinkedList<Node> visitReturnclause(XQueryParser.ReturnclauseContext ctx) { 
+        return visit(ctx.xq());
+    }
+
+    @Override 
+    public LinkedList<Node> visitCondEq1(XQueryParser.CondEq1Context ctx) { 
+        LinkedList<Node> res = new LinkedList<>();
+
+        // return cur set of nodes after find one pair of elements equal
+        LinkedList<Node> visitRes0 = visit(ctx.xq(0));
+        LinkedList<Node> visitRes1 = visit(ctx.xq(1));
+        for(Node resNode0 : visitRes0) {
+            for(Node resNode1 : visitRes1) {
+                if(resNode0.isEqualNode(resNode1)) {
+                    res.add(resNode0);
+                }
+            }
+        }
+  
         return res;
     }
 }
