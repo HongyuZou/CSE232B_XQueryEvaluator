@@ -1,5 +1,3 @@
-import java.io.IOException;
-
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -10,8 +8,6 @@ import java.util.*;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.dom.DOMSource; 
 import javax.xml.transform.stream.StreamResult;
 
@@ -32,8 +28,8 @@ public class XPathMain {
         }
     }
 
-    public static LinkedList<Node> evaluateXPath(LinkedList<Node> curNodes, String ap) {
-        CharStream charStream = CharStreams.fromString(ap);
+    public static LinkedList<Node> evaluateXPath(LinkedList<Node> curNodes, String path) {
+        CharStream charStream = CharStreams.fromString(path);
         XPathLexer lexer = new XPathLexer(charStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
         XPathParser parser = new XPathParser(tokenStream);
@@ -41,8 +37,7 @@ public class XPathMain {
         ParseTree parseTree = parser.ap();
         XPathEvaluator evaluator = new XPathEvaluator();
         evaluator.curNodes = curNodes;
-        LinkedList<Node> res = evaluator.visit(parseTree);
-        return res;
+        return evaluator.visit(parseTree);
     }
 
     public static void main(String[] args) throws Exception {
@@ -75,10 +70,8 @@ public class XPathMain {
         Node outputNode = resDoc.importNode(result, true);
         trimWhitespace(outputNode);
         resDoc.appendChild(outputNode);
-        TransformerFactory tFactory =
-        TransformerFactory.newInstance();
-        Transformer transformer = 
-        tFactory.newTransformer();
+        TransformerFactory tFactory = TransformerFactory.newInstance();
+        Transformer transformer = tFactory.newTransformer();
         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 
         DOMSource source = new DOMSource(resDoc);
