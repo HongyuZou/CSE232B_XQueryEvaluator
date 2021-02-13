@@ -169,7 +169,123 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
                 }
             }
         }
-  
+        
         return res;
+    }
+
+    @Override 
+    public LinkedList<Node> visitCondEq2(XQueryParser.CondEq2Context ctx) { 
+        LinkedList<Node> res = new LinkedList<>();
+
+        // return cur set of nodes after find one pair of elements equal
+        LinkedList<Node> visitRes0 = visit(ctx.xq(0));
+        LinkedList<Node> visitRes1 = visit(ctx.xq(1));
+        for(Node resNode0 : visitRes0) {
+            for(Node resNode1 : visitRes1) {
+                if(resNode0.isEqualNode(resNode1)) {
+                    res.add(resNode0);
+                }
+            }
+        }
+        
+        return res;
+    }
+
+    @Override 
+    public LinkedList<Node> visitCondIs(XQueryParser.CondIsContext ctx) { 
+        LinkedList<Node> res = new LinkedList<>();
+
+        // return cur set of nodes after find one pair of elements equal
+        LinkedList<Node> visitRes0 = visit(ctx.xq(0));
+        LinkedList<Node> visitRes1 = visit(ctx.xq(1));
+        for(Node resNode0 : visitRes0) {
+            for(Node resNode1 : visitRes1) {
+                if(resNode0.isSameNode(resNode1)) {
+                    res.add(resNode0);
+                }
+            }
+        }
+        
+        return res;
+    }
+
+    @Override
+    public LinkedList<Node> visitCondEmpty(XQueryParser.CondEmptyContext ctx) {
+        LinkedList<Node> visitRes = visit(ctx.xq());
+        LinkedList<Node> res = new LinkedList<>();
+
+        if(visitRes.size() != 0) {
+            Node dummy = xmlDoc.createTextNode("hehe");
+            res.add(dummy);
+        }
+
+        return visitRes;
+    }
+
+    @Override 
+    public LinkedList<Node> visitCondSome(XQueryParser.CondSomeContext ctx) { 
+        int varSize = ctx.var().size();
+        int varIdx = 0;
+        LinkedList<Node> res = new LinkedList<>();
+        visitCondSomeHelper(varIdx, varSize, ctx, res);
+        return res;
+    }
+
+    private void visitCondSomeHelper(int varIdx, int varSize, XQueryParser.CondSomeContext ctx, LinkedList<Node> res) {
+        // finished for, start evaluate let, where and return
+        if(varIdx > varSize - 1) {
+            res = visit(ctx.cond());
+            return;
+        }
+
+        // recursively check for variables
+        LinkedList<Node> curRes = visit(ctx.xq(varIdx));
+        for(Node node : curRes) {
+            HashMap<String, LinkedList<Node>> curContext = new HashMap<>(this.context);
+            this.contextStack.push(curContext);
+            this.context.put(ctx.var(varIdx).getText(), new LinkedList<>(Arrays.asList(node)));
+            visitCondSomeHelper( varIdx + 1, varSize, ctx, res);
+            this.contextStack.pop();
+        }
+
+        return;
+
+    }
+
+    @Override 
+    public LinkedList<Node> visitCondParen(XQueryParser.CondParenContext ctx) { 
+        return visit(ctx.cond());
+    }
+
+    @Override 
+    public LinkedList<Node> visitCondAnd(XQueryParser.CondAndContext ctx) { 
+        LinkedList<Node> res = new LinkedList<>();
+        if(visit(ctx.cond(0)).isEmpty() || visit(ctx.cond(1)).isEmpty()) {
+            return new LinkedList<>();
+        }
+        res.addAll(visit(ctx.cond(0)));
+        res.addAll(visit(ctx.cond(1)));
+        return res; 
+    }
+
+    @Override 
+    public LinkedList<Node> visitCondOr(XQueryParser.CondOrContext ctx) { 
+        LinkedList<Node> res = new LinkedList<>();
+        res.addAll(visit(ctx.cond(0)));
+        res.addAll(visit(ctx.cond(1)));
+        return res;
+    }
+
+    @Override 
+    public LinkedList<Node> visitCondNot(XQueryParser.CondNotContext ctx) { 
+        LinkedList<Node> visitRes = visit(ctx.cond());
+        LinkedList<Node> res = new LinkedList<>();
+
+        if(visitRes.size() != 0) {
+            Node dummy = xmlDoc.createTextNode("hehe");
+            res.add(dummy);
+        }
+
+        return visitRes;
     }
 }
