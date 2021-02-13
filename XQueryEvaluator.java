@@ -88,7 +88,10 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
     @Override 
     public LinkedList<Node> visitXqClause(XQueryParser.XqClauseContext ctx) { 
         LinkedList<Node> res = new LinkedList<>();
+        HashMap<String, LinkedList<Node>> curContext = new HashMap<>(this.context);
+        this.contextStack.push(curContext);
         visitXqClauseHelper(res, 0, ctx.forclause().xq().size(), ctx);
+        this.context = this.contextStack.pop();
         return res;
     }
 
@@ -119,8 +122,8 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
 
     @Override
     public LinkedList<Node> visitXqLet(XQueryParser.XqLetContext ctx) {
-        HashMap<String, LinkedList<Node>> originalContext = new HashMap<>(this.context);
-        this.contextStack.push(originalContext);
+        HashMap<String, LinkedList<Node>> curContext = new HashMap<>(this.context);
+        this.contextStack.push(curContext);
         LinkedList<Node> res = visitChildren(ctx);
         this.context = this.contextStack.pop();
         return res;
@@ -209,25 +212,24 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
         LinkedList<Node> visitRes = visit(ctx.xq());
         LinkedList<Node> res = new LinkedList<>();
 
-        if(!visitRes.isEmpty()) {
-            Node dummy = xmlDoc.createTextNode("hehe");
-            res.add(dummy);
+        if(visitRes.isEmpty()) {
+            res.add(xmlDoc.createTextNode("dummy"));
         }
 
         return visitRes;
     }
 
     @Override 
-    public LinkedList<Node> visitCondSome(XQueryParser.CondSomeContext ctx) { 
-        int varSize = ctx.var().size();
-        int varIdx = 0;
+    public LinkedList<Node> visitCondSome(XQueryParser.CondSomeContext ctx) {
         LinkedList<Node> res = new LinkedList<>();
-        visitCondSomeHelper(varIdx, varSize, ctx, res);
+        HashMap<String, LinkedList<Node>> curContext = new HashMap<>(this.context);
+        this.contextStack.push(curContext);
+        visitCondSomeHelper(0, ctx.var().size(), ctx, res);
+        this.context = this.contextStack.pop();
         return res;
     }
 
     private void visitCondSomeHelper(int varIdx, int varSize, XQueryParser.CondSomeContext ctx, LinkedList<Node> res) {
-        // finished for, start evaluate let, where and return
         if(varIdx > varSize - 1) {
             res.addAll(visit(ctx.cond()));
             return;
@@ -239,7 +241,7 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
             HashMap<String, LinkedList<Node>> curContext = new HashMap<>(this.context);
             this.contextStack.push(curContext);
             this.context.put(ctx.var(varIdx).getText(), new LinkedList<>(Arrays.asList(node)));
-            visitCondSomeHelper( varIdx + 1, varSize, ctx, res);
+            visitCondSomeHelper(varIdx + 1, varSize, ctx, res);
             this.context = this.contextStack.pop();
         }
     }
@@ -273,9 +275,8 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
         LinkedList<Node> visitRes = visit(ctx.cond());
         LinkedList<Node> res = new LinkedList<>();
 
-        if(!visitRes.isEmpty()) {
-            Node dummy = xmlDoc.createTextNode("hehe");
-            res.add(dummy);
+        if(visitRes.isEmpty()) {
+            res.add(xmlDoc.createTextNode("dummy"));
         }
 
         return visitRes;
