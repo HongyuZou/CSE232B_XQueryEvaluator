@@ -1,0 +1,12 @@
+3245
+[[#text: SCENE III.  A street.], [#text: SCENE I.  Rome. Before the Capitol; the Senate sitting above.], [#text: SCENE II.  The Forum.], [#text: ACT III]]
+TITLE/text()
+[[SCENE: null]]
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<query_result>
+    <who>CAESAR</who>
+    <when>
+        <scene>SCENE I.  Rome. Before the Capitol; the Senate sitting above.</scene>
+        <act>SCENE III.  A street.SCENE I.  Rome. Before the Capitol; the Senate sitting above.SCENE II.  The Forum.ACT III</act>
+    </when>
+</query_result>

@@ -32,7 +32,7 @@ public class XPathMain {
         }
     }
 
-    public static LinkedList<Node> evaluateXPathAp( String ap) {
+    public static LinkedList<Node> evaluateXPathAp(String ap) {
         CharStream charStream = CharStreams.fromString(ap);
         XPathLexer lexer = new XPathLexer(charStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
@@ -40,8 +40,7 @@ public class XPathMain {
         parser.removeErrorListeners();
         ParseTree parseTree = parser.ap();
         XPathEvaluator evaluator = new XPathEvaluator();
-        LinkedList<Node> res = evaluator.visit(parseTree);
-        return res;
+        return evaluator.visit(parseTree);
     }
 
     public static LinkedList<Node> evaluateXPathRp(LinkedList<Node> curNodes, String rp) {
@@ -53,8 +52,7 @@ public class XPathMain {
         ParseTree parseTree = parser.rp();
         XPathEvaluator evaluator = new XPathEvaluator();
         evaluator.curNodes = curNodes;
-        LinkedList<Node> res = evaluator.visit(parseTree);
-        return res;
+        return evaluator.visit(parseTree);
     }
 
     public static void main(String[] args) throws Exception {
@@ -82,7 +80,6 @@ public class XPathMain {
             result.appendChild(importedNode);
         }
         
-        //System.out.println(res.size());
         // Use a Transformer for output
         Node outputNode = resDoc.importNode(result, true);
         trimWhitespace(outputNode);

@@ -67,12 +67,12 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
     @Override
     public LinkedList<Node> visitXqDirectChild(XQueryParser.XqDirectChildContext ctx) {
         LinkedList<Node> curNodes = visit(ctx.xq());
-        return XPathMain.evaluateXPathRp(curNodes, ctx.rp().getText()); 
+        return XPathMain.evaluateXPathRp(new LinkedList<>(curNodes), ctx.rp().getText()); 
     }
 
     @Override
     public LinkedList<Node> visitXqIndirectChild(XQueryParser.XqIndirectChildContext ctx) {
-        LinkedList<Node> curNodes = visit(ctx.xq());
+        LinkedList<Node> curNodes = new LinkedList<>(visit(ctx.xq()));
         curNodes.addAll(getAllDesc(curNodes));
         return XPathMain.evaluateXPathRp(curNodes, ctx.rp().getText()); 
     }
@@ -113,9 +113,7 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
         }
 
         // recursively check for variables
-        System.out.println(ctx.forclause().xq(varIdx).getText());
         LinkedList<Node> curRes = visit(ctx.forclause().xq(varIdx));
-        System.out.println("curRes :" + curRes);
         for(Node node : curRes) {
             HashMap<String, LinkedList<Node>> curContext = new HashMap<>(this.context);
             this.contextStack.push(curContext);
@@ -143,7 +141,7 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
     public LinkedList<Node> visitLetclause(XQueryParser.LetclauseContext ctx) { 
         for(int i = 0; i < ctx.var().size(); i++) {
             LinkedList<Node> res = visit(ctx.xq(i));
-            this.context.put(ctx.var(i).getText(), res);
+            this.context.put(ctx.var(i).getText(), new LinkedList<>(res));
         }
         return null;
     }

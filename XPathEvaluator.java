@@ -187,7 +187,7 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
     @Override public LinkedList<Node> visitDirectChildRP(XPathParser.DirectChildRPContext ctx) { 
         // Update curNodes with visit rp 0
         visit(ctx.rp(0));
-        return visit(ctx.rp(1)); 
+        return visit(ctx.rp(1));
     }
 
     // modified rp // rp
