@@ -1,5 +1,3 @@
-import java.io.IOException;
-
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -10,16 +8,16 @@ import java.util.*;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.dom.DOMSource; 
 import javax.xml.transform.stream.StreamResult;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.w3c.dom.Node;
 
-public class XPathMain {
+public class XQueryMain {
     public static void trimWhitespace(Node node)
     {
         NodeList children = node.getChildNodes();
@@ -32,53 +30,31 @@ public class XPathMain {
         }
     }
 
-    public static LinkedList<Node> evaluateXPathAp( String ap) {
-        CharStream charStream = CharStreams.fromString(ap);
-        XPathLexer lexer = new XPathLexer(charStream);
-        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
-        XPathParser parser = new XPathParser(tokenStream);
-        parser.removeErrorListeners();
-        ParseTree parseTree = parser.ap();
-        XPathEvaluator evaluator = new XPathEvaluator();
-        LinkedList<Node> res = evaluator.visit(parseTree);
-        return res;
-    }
-
-    public static LinkedList<Node> evaluateXPathRp(LinkedList<Node> curNodes, String rp) {
-        CharStream charStream = CharStreams.fromString(rp);
-        XPathLexer lexer = new XPathLexer(charStream);
-        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
-        XPathParser parser = new XPathParser(tokenStream);
-        parser.removeErrorListeners();
-        ParseTree parseTree = parser.rp();
-        XPathEvaluator evaluator = new XPathEvaluator();
-        evaluator.curNodes = curNodes;
-        LinkedList<Node> res = evaluator.visit(parseTree);
-        return res;
-    }
-
     public static void main(String[] args) throws Exception {
         // "Java -jar CSE-232B-M1.jar milestone1_input_queries.txt"
         String fileName = args[0];
         CharStream charStream = CharStreams.fromFileName(fileName);
-        XPathLexer lexer = new XPathLexer(charStream);
+        XQueryLexer lexer = new XQueryLexer(charStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
-        XPathParser parser = new XPathParser(tokenStream);
+        XQueryParser parser = new XQueryParser(tokenStream);
         parser.removeErrorListeners();
-        ParseTree parseTree = parser.ap();
-        XPathEvaluator evaluator = new XPathEvaluator();
+        ParseTree parseTree = parser.xq();
+        XQueryEvaluator evaluator = new XQueryEvaluator();
+        DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = builderFactory.newDocumentBuilder();
+        evaluator.output = builder.newDocument();
+        
         List<Node> res = evaluator.visit(parseTree);
-
         Document resDoc = DocumentBuilderFactory
                           .newInstance()
                           .newDocumentBuilder()
                           .newDocument();
         
         // create result node
-        Document xmlDoc = evaluator.getXmlDoc();
-        Node result = xmlDoc.createElement("query_result");
+        Document output = evaluator.output;
+        Node result = output.createElement("query_result");
         for(Node node : res) {
-            Node importedNode = xmlDoc.importNode(node, true);
+            Node importedNode = output.importNode(node, true);
             result.appendChild(importedNode);
         }
         
@@ -87,10 +63,8 @@ public class XPathMain {
         Node outputNode = resDoc.importNode(result, true);
         trimWhitespace(outputNode);
         resDoc.appendChild(outputNode);
-        TransformerFactory tFactory =
-        TransformerFactory.newInstance();
-        Transformer transformer = 
-        tFactory.newTransformer();
+        TransformerFactory tFactory = TransformerFactory.newInstance();
+        Transformer transformer = tFactory.newTransformer();
         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 
         DOMSource source = new DOMSource(resDoc);

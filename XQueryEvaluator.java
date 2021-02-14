@@ -7,10 +7,13 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
-    Document xmlDoc = null;
     Document output = null;
     HashMap<String, LinkedList<Node>> context = new HashMap<>();
     Stack<HashMap<String, LinkedList<Node>>> contextStack = new Stack<>();
+
+    public Document getoutput() {
+        return this.output;
+    }
 
     private LinkedList<Node> getAllDesc(LinkedList<Node> curNodes) {
         Set<Node> result = new HashSet<>();
@@ -39,13 +42,13 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
     public LinkedList<Node> visitXqStr(XQueryParser.XqStrContext ctx) {
         String literal = ctx.STR().getText();
         String text = literal.substring(1, literal.length() - 1);
-        Node newNode = xmlDoc.createTextNode(text);
+        Node newNode = output.createTextNode(text);
         return new LinkedList<>(Arrays.asList(newNode));
     }
 
     @Override
     public LinkedList<Node> visitXqAp(XQueryParser.XqApContext ctx) {
-        return XPathMain.evaluateXPath(new LinkedList<>(), ctx.getText());
+        return XPathMain.evaluateXPathAp(ctx.getText());
     }
 
     @Override
@@ -64,14 +67,14 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
     @Override
     public LinkedList<Node> visitXqDirectChild(XQueryParser.XqDirectChildContext ctx) {
         LinkedList<Node> curNodes = visit(ctx.xq());
-        return XPathMain.evaluateXPath(curNodes, ctx.rp().getText()); 
+        return XPathMain.evaluateXPathRp(curNodes, ctx.rp().getText()); 
     }
 
     @Override
     public LinkedList<Node> visitXqIndirectChild(XQueryParser.XqIndirectChildContext ctx) {
         LinkedList<Node> curNodes = visit(ctx.xq());
         curNodes.addAll(getAllDesc(curNodes));
-        return XPathMain.evaluateXPath(curNodes, ctx.rp().getText()); 
+        return XPathMain.evaluateXPathRp(curNodes, ctx.rp().getText()); 
     }
 
     @Override 
@@ -110,7 +113,9 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
         }
 
         // recursively check for variables
+        System.out.println(ctx.forclause().xq(varIdx).getText());
         LinkedList<Node> curRes = visit(ctx.forclause().xq(varIdx));
+        System.out.println("curRes :" + curRes);
         for(Node node : curRes) {
             HashMap<String, LinkedList<Node>> curContext = new HashMap<>(this.context);
             this.contextStack.push(curContext);
@@ -213,7 +218,7 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
         LinkedList<Node> res = new LinkedList<>();
 
         if(visitRes.isEmpty()) {
-            res.add(xmlDoc.createTextNode("dummy"));
+            res.add(output.createTextNode("dummy"));
         }
 
         return visitRes;
@@ -276,7 +281,7 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
         LinkedList<Node> res = new LinkedList<>();
 
         if(visitRes.isEmpty()) {
-            res.add(xmlDoc.createTextNode("dummy"));
+            res.add(output.createTextNode("dummy"));
         }
 
         return visitRes;
