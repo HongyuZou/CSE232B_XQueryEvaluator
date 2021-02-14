@@ -60,13 +60,14 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
     public LinkedList<Node> visitXqConcat(XQueryParser.XqConcatContext ctx) {
         Set<Node> res = new HashSet<>();
         res.addAll(visit(ctx.xq(0)));
+        System.out.println("second query: " + ctx.xq(1).getText());
         res.addAll(visit(ctx.xq(1)));
         return new LinkedList<>(res);
     }
 
     @Override
     public LinkedList<Node> visitXqDirectChild(XQueryParser.XqDirectChildContext ctx) {
-        LinkedList<Node> curNodes = visit(ctx.xq());
+        LinkedList<Node> curNodes = new LinkedList<>(visit(ctx.xq()));
         return XPathMain.evaluateXPathRp(new LinkedList<>(curNodes), ctx.rp().getText()); 
     }
 
@@ -100,6 +101,7 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
 
     public void visitXqClauseHelper(LinkedList<Node> res, int varIdx, int forVarsCnt, XQueryParser.XqClauseContext ctx) {
         // finished for, start evaluate let, where and return
+        //System.out.println("hehe " + varIdx + " " + ctx.forclause().getText());
         if(varIdx > forVarsCnt - 1) {
             if(ctx.letclause() != null) {
                 visit(ctx.letclause());
@@ -114,6 +116,7 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
 
         // recursively check for variables
         LinkedList<Node> curRes = visit(ctx.forclause().xq(varIdx));
+        System.out.println("curRes size: " + curRes.size());
         for(Node node : curRes) {
             HashMap<String, LinkedList<Node>> curContext = new HashMap<>(this.context);
             this.contextStack.push(curContext);
@@ -153,6 +156,7 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
 
     @Override
     public LinkedList<Node> visitReturnclause(XQueryParser.ReturnclauseContext ctx) { 
+        System.out.println("In return clause: " + ctx.xq().getText());
         return visit(ctx.xq());
     }
 

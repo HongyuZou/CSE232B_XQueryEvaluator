@@ -52,7 +52,7 @@ public class XQueryMain {
         
         // create result node
         Document output = evaluator.output;
-        Node result = output.createElement("query_result");
+        Node result = output.createElement("result");
         for(Node node : res) {
             Node importedNode = output.importNode(node, true);
             result.appendChild(importedNode);
