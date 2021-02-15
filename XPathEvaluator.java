@@ -203,6 +203,7 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
         visit(ctx.rp());
         LinkedList<Node> original = this.curNodes;
         LinkedList<Node> res = new LinkedList<>();
+
         for (Node n : original) {
             this.curNodes = new LinkedList<>(List.of(n));
             // treat f as boolean
@@ -211,8 +212,8 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
             }
         }
 
+        // side effect
         this.curNodes = res;
-
         return res;
     }
 
@@ -333,9 +334,11 @@ public class XPathEvaluator extends XPathBaseVisitor<LinkedList<Node>> {
     }
 
     @Override public LinkedList<Node> visitNot(XPathParser.NotContext ctx) { 
-        if(!visit(ctx.f()).isEmpty()) {
+        LinkedList<Node> original = new LinkedList<>(curNodes);
+        LinkedList<Node> res = visit(ctx.f());
+        if(!res.isEmpty()) {
             return new LinkedList<>();
         }
-        return this.curNodes;
+        return original;//this.curNodes;
     }
 }
