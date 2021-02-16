@@ -32,23 +32,24 @@ public class XPathMain {
         }
     }
 
-    public static LinkedList<Node> evaluateXPathAp(String ap) {
-        CharStream charStream = CharStreams.fromString(ap);
+    private static XPathParser generateParser(String input) {
+        CharStream charStream = CharStreams.fromString(input);
         XPathLexer lexer = new XPathLexer(charStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
         XPathParser parser = new XPathParser(tokenStream);
         parser.removeErrorListeners();
+        return parser;
+    }
+
+    public static LinkedList<Node> evaluateXPathAp(String ap) {
+        XPathParser parser = generateParser(ap);
         ParseTree parseTree = parser.ap();
         XPathEvaluator evaluator = new XPathEvaluator();
         return evaluator.visit(parseTree);
     }
 
     public static LinkedList<Node> evaluateXPathRp(LinkedList<Node> curNodes, String rp) {
-        CharStream charStream = CharStreams.fromString(rp);
-        XPathLexer lexer = new XPathLexer(charStream);
-        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
-        XPathParser parser = new XPathParser(tokenStream);
-        parser.removeErrorListeners();
+        XPathParser parser = generateParser(rp);
         ParseTree parseTree = parser.rp();
         XPathEvaluator evaluator = new XPathEvaluator();
         evaluator.curNodes = curNodes;

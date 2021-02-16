@@ -90,8 +90,8 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
     
     @Override 
     public LinkedList<Node> visitXqClause(XQueryParser.XqClauseContext ctx) { 
-        LinkedList<Node> res = new LinkedList<>();
         HashMap<String, LinkedList<Node>> curContext = new HashMap<>(this.context);
+        LinkedList<Node> res = new LinkedList<>();
         this.contextStack.push(curContext);
         visitXqClauseHelper(res, 0, ctx.forclause().xq().size(), ctx);
         this.context = this.contextStack.pop();
@@ -216,7 +216,7 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
         LinkedList<Node> res = new LinkedList<>();
 
         if(visitRes.isEmpty()) {
-            res.add(output.createTextNode("dummy"));
+            res.add(output.createTextNode("hehe"));
         }
 
         return visitRes;
@@ -279,7 +279,7 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
         LinkedList<Node> res = new LinkedList<>();
 
         if(visitRes.isEmpty()) {
-            res.add(output.createTextNode("dummy"));
+            res.add(output.createTextNode("hehe"));
         }
 
         return visitRes;
