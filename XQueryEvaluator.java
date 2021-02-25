@@ -219,7 +219,7 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
             res.add(output.createTextNode("hehe"));
         }
 
-        return visitRes;
+        return res;
     }
 
     @Override 
@@ -282,6 +282,6 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
             res.add(output.createTextNode("hehe"));
         }
 
-        return visitRes;
+        return res;
     }
 }
