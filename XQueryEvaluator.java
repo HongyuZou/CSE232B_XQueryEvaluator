@@ -1,10 +1,9 @@
-import java.util.LinkedList;
-
 import java.util.*;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+
 
 public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
     Document output = null;
@@ -31,6 +30,15 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
             result.add(child);
             getDescHelper(result, child);
         }
+    }
+
+    private LinkedList<Node> getAllChildren(Node node) {
+        Set<Node> result = new HashSet<>();
+        NodeList children = node.getChildNodes();
+        for(int j = 0; j < children.getLength(); j ++) {
+            result.add(children.item(j));
+        }
+        return new LinkedList<>(result);
     }
 
     @Override
@@ -154,6 +162,91 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
     @Override
     public LinkedList<Node> visitReturnclause(XQueryParser.ReturnclauseContext ctx) { 
         return visit(ctx.xq());
+    }
+
+    @Override public LinkedList<Node> visitJoinclause(XQueryParser.JoinclauseContext ctx) { 
+        // result tuples
+        LinkedList<Node> res = new LinkedList<>();
+
+        // get tuples
+        LinkedList<Node> joinRes0 = visit(ctx.xq(0));
+        LinkedList<Node> joinRes1 = visit(ctx.xq(1));
+        
+        // build hashtable on result of first xq, value -> list of tuples
+        Map<String, LinkedList<Node>> hashtable = buildHashtable(ctx.varArr(0), joinRes0);
+        
+        // match result
+        XQueryParser.VarArrContext varArr1 = ctx.varArr(1);
+        for(Node tuple1 : joinRes1) {
+            LinkedList<Node> tupleElements = getAllChildren(tuple1);
+            String key = "";
+
+            for(Node ele1 : tupleElements) {
+                for(int i = 0; i < varArr1.NAME().size(); i ++) {
+                    String varName = varArr1.NAME(i).getText();
+                    String nodeName = ele1.getNodeName();
+                    
+                    // check if it is the element to join, pick values as key in hashtable
+                    if(varName.equals(nodeName)) {
+                        String eleValue = ele1.getFirstChild().getTextContent();
+                        key += eleValue;
+                    }
+                }
+            }
+
+            // cartisian product
+            if(hashtable.containsKey(key)) {
+                LinkedList<Node> tuples0 = new LinkedList<Node>(hashtable.get(key));
+                // add results as tuples to result documents
+                for(Node node : tuples0){
+                    Node outputNode = output.createElement("tuple");
+                    
+                    // for xq0
+                    for(Node ele : tupleElements) {
+                        outputNode.appendChild(output.importNode(ele, true));
+                    }
+
+                    // for xq1
+                    for(Node ele : getAllChildren(node)) {
+                        outputNode.appendChild(output.importNode(ele, true));
+                    }
+
+                    res.add(outputNode);
+                }
+            }
+        }
+
+        return res;
+    }
+
+    private HashMap<String, LinkedList<Node>> buildHashtable(XQueryParser.VarArrContext varArr,  
+                                                             LinkedList<Node> tuples) {
+        HashMap<String, LinkedList<Node>> hashtable = new HashMap<>();
+        for(Node tuple : tuples) {
+            String key = "";
+            LinkedList<Node> tupleElements = getAllChildren(tuple);
+            
+            for(Node ele : tupleElements) {
+                for(int i = 0; i < varArr.NAME().size(); i ++) {
+                    String varName = varArr.NAME(i).getText();
+                    String nodeName = ele.getNodeName();
+                    
+                    // check if it is the element to join, pick values as key in hashtable
+                    if(varName.equals(nodeName)) {
+                        String eleValue = ele.getFirstChild().getTextContent();
+                        key += eleValue;
+                    }
+                }
+            }
+
+            if(!hashtable.containsKey(key)) {
+                hashtable.put(key, new LinkedList<>());
+            }
+            
+            hashtable.get(key).add(tuple);
+        }
+
+        return hashtable;
     }
 
     @Override 

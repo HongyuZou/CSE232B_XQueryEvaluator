@@ -24,6 +24,13 @@ public interface XQueryVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitXqVar(XQueryParser.XqVarContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code xqJoin}
+	 * labeled alternative in {@link XQueryParser#xq}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitXqJoin(XQueryParser.XqJoinContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code xqParen}
 	 * labeled alternative in {@link XQueryParser#xq}.
 	 * @param ctx the parse tree
@@ -104,6 +111,12 @@ public interface XQueryVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitReturnclause(XQueryParser.ReturnclauseContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link XQueryParser#joinclause}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitJoinclause(XQueryParser.JoinclauseContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code condEmpty}
 	 * labeled alternative in {@link XQueryParser#cond}.
 	 * @param ctx the parse tree
@@ -172,6 +185,12 @@ public interface XQueryVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitVar(XQueryParser.VarContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link XQueryParser#varArr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitVarArr(XQueryParser.VarArrContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code directChild}
 	 * labeled alternative in {@link XQueryParser#ap}.

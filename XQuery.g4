@@ -11,12 +11,14 @@ xq : var                                                         #xqVar
    | '<'NAME'>' '{' xq '}' '<' '/' NAME'>'                       #xqTag
    | forclause letclause? whereclause? returnclause              #xqClause
    | letclause xq                                                #xqLet
+   | joinclause                                                  #xqJoin
    ;
 
 forclause: 'for' var 'in' xq (',' var 'in' xq)*;
 letclause: 'let' var ':=' xq (',' var ':=' xq)*;
 whereclause: 'where' cond;
 returnclause: 'return' xq;
+joinclause: 'join' '(' xq ',' xq ',' varArr ',' varArr')';
 
 cond : xq '=' xq                                                 #condEq1
      | xq 'eq' xq                                                #condEq2
@@ -30,3 +32,4 @@ cond : xq '=' xq                                                 #condEq1
      ;
 
 var: '$' NAME;
+varArr: '[' NAME (',' NAME)* ']';
