@@ -3,6 +3,7 @@ import java.util.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import java.util.regex.*;
 
 
 public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
@@ -98,6 +99,8 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
     
     @Override 
     public LinkedList<Node> visitXqClause(XQueryParser.XqClauseContext ctx) { 
+        // TODO:
+        String returnedQuery = generateRewriteJoin(ctx, ctx.forclause().xq().size());
         HashMap<String, LinkedList<Node>> curContext = new HashMap<>(this.context);
         LinkedList<Node> res = new LinkedList<>();
         this.contextStack.push(curContext);
@@ -129,6 +132,163 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
             visitXqClauseHelper(res, varIdx + 1, forVarsCnt, ctx);
             this.context = this.contextStack.pop();
         }
+    }
+
+    private String generateRewriteJoin(XQueryParser.XqClauseContext ctx, int forVarsCnt) {
+        // group up vars for each xq in join clause
+        List<HashSet<String>> varGroups = new ArrayList<HashSet<String>>();
+        for(int i = 0; i < forVarsCnt; i ++) {
+            String xq = ctx.forclause().xq(i).getText();
+            String varName = ctx.forclause().var(i).getText();
+            String varParentName = xq.split("/")[0];
+
+            boolean added = false;
+            for(Set<String> group : varGroups) {
+                if(group.contains(varParentName)) {
+                    group.add(varName);
+                    added = true;
+                }
+            }
+
+            // root parent
+            if(!added) {
+                HashSet<String> newGroup = new HashSet<>();
+                newGroup.add(varName);
+                varGroups.add(newGroup);
+            }
+        }
+
+        // check if there is need to join
+        if(varGroups.size() < 2) {
+            return null;
+        }
+
+        // check cond in where clause
+        String[] whereConds = ctx.whereclause().cond().getText().split("and");
+
+        // $a eq $b
+        // $a eq "John"
+        String[][] whereCondsOperands = new String[whereConds.length][2];
+
+        // $a in which group, $b in which group
+        // [which condition] [int, int] -> [group index, group index], $a is in group 1 ...
+        int[][] opGroups = new int[whereConds.length][2];
+
+        int idx = 0;
+        for(String cond : whereConds) {
+            String[] operands = cond.split("=|eq");
+            whereCondsOperands[idx] = operands;
+            
+            int[] groupIdx = {-1, -1};
+            for(int i = 0; i < varGroups.size(); i ++) {
+                Set<String> group = varGroups.get(i);
+                if(group.contains(operands[0])) {
+                    groupIdx[0] = i;
+                }
+
+                if(group.contains(operands[1])) {
+                    groupIdx[1] = i;
+                }
+            }
+            opGroups[idx] = groupIdx;
+            idx ++;
+        }
+
+        return generateJoinQuery(ctx, varGroups, whereCondsOperands, opGroups);
+    }
+
+    private String generateJoinQuery(XQueryParser.XqClauseContext ctx, List<HashSet<String>> varGroups, 
+                                     String[][] whereCondsOperands, int[][] opGroups) {
+        String query = "for $tuple in join (";
+        
+        // for each join group
+        for(int i = 0; i < varGroups.size(); i ++) {
+            HashSet<String> curGroup = varGroups.get(i);
+            String returnTuple = "<tuple>{";
+            query += "for ";
+
+            // for var in xq
+            int count = 0;
+            for(int j = 0; j < ctx.forclause().var().size(); j ++) {
+                String var = ctx.forclause().var(j).getText();
+                String xq = ctx.forclause().xq(j).getText();
+
+                if(curGroup.contains(var)) {
+                    if(count != 0) {
+                        query += ",\n";
+                    }
+                    query += String.format("%s in %s", var, xq);
+                    count ++;
+
+                    // <tuple></tuple> in return for each group
+                    if(!returnTuple.equals("<tuple>{")) {
+                        returnTuple += ",";
+                    }
+                    returnTuple += String.format("<%s>{%s}</%s>", var.substring(1), var, var.substring(1));
+                }
+            }
+            returnTuple += "}</tuple>";
+            query += "\n";
+            
+            // where
+            int cnt = 0;
+            for(int j = 0; j < whereCondsOperands.length; j ++) {
+                String[] ops = whereCondsOperands[j];
+                if(curGroup.contains(ops[0]) && opGroups[j][1] < 0) {
+                    if(cnt == 0) {
+                        query += "where ";
+                    }
+
+                    if(cnt != 0) {
+                        query += "and ";
+                    }
+                    query += String.format("%s eq %s\n", ops[0], ops[1]);
+                    cnt ++;
+                }
+            }
+
+            // return
+            query += String.format("return %s,\n", returnTuple);
+        }
+
+        // vars: [sp], [sp]
+        String vars1 = "";
+        String vars2 = "";
+        for(int i = 0; i < whereCondsOperands.length; i ++) {
+            String[] ops = whereCondsOperands[i];
+            int group1 = opGroups[i][0];
+            int group2 = opGroups[i][1];
+
+            if(group1 < 0 || group2 < 0) {continue;}
+            if(group2 > group1) {
+                vars1 += ops[0].substring(1) + ",";
+                vars2 += ops[1].substring(1) + ",";
+            } else {
+                vars2 += ops[0].substring(1) + ",";
+                vars1 += ops[1].substring(1) + ",";
+            }
+        }
+        vars1 = String.format("[%s]", vars1.substring(0, vars1.length() - 1));
+        vars2 = String.format("[%s]", vars2.substring(0, vars2.length() - 1));
+        query += String.format("%s, %s)", vars1, vars2) + "\n";
+
+        // return
+        query += "return ";
+        String returnClause = ctx.returnclause().xq().getText();
+        Pattern regex = Pattern.compile("\\$[a-zA-Z]+");
+		Matcher regexMatcher = regex.matcher(returnClause);
+        while (regexMatcher.find()) {
+            // Fetching Group from String
+            String varName = regexMatcher.group(0);
+            String varNameWithoutDollar = varName.substring(1);
+            //System.out.println(varName + " " + String.format("$tuple/%s/*", varName));
+            returnClause = returnClause.replaceAll("\\" + varName, 
+                                        String.format("\\$tuple/%s/*", varNameWithoutDollar));
+        }
+        
+        query += returnClause;
+        System.out.println(query);
+        return query;
     }
 
     @Override

@@ -7,3 +7,8 @@
 .vscode/
 
 .DS_Store
+
+org
+javax
+*.out
+*.txt
