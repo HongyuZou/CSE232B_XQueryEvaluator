@@ -141,8 +141,8 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
     }
 
     class Group {
-        Set<String> keys = = new HashSet<>();
-        List<String> queries = = new ArrayList<>();
+        Set<String> keys = new HashSet<>();
+        List<String> queries = new ArrayList<>();
         List<String> conds = new ArrayList<>();
         final int id;
 
@@ -228,14 +228,14 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
 
             // The start is not another var
             if (rightVar.charAt(0) != '$') {
-                Group group = new Group(leftVar, xq, groups.size());
+                Group group = new Group(leftVar, leftVar + " in " + xq, groups.size());
                 groups.add(group);
                 varMap.put(leftVar, group.id);
                 continue;
             }
 
             Group group = groups.get(varMap.get(rightVar));
-            group.add(leftVar, xq);
+            group.add(leftVar, leftVar + " in " + xq);
             varMap.put(leftVar, group.id);
         }
     }
