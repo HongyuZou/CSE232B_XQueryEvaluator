@@ -141,14 +141,14 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
     }
 
     class Group {
-        Set<String> keys;
-        List<String> queries;
+        Set<String> keys = = new HashSet<>();
+        List<String> queries = = new ArrayList<>();
         List<String> conds = new ArrayList<>();
         final int id;
 
         Group(String key, String query, int id) {
-            this.keys = Collections.singleton(key);
-            this.queries = Collections.singletonList(query);
+            this.keys.add(key);
+            this.queries.add(query);
             this.id = id;
         } 
 
@@ -186,7 +186,7 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
         }
 
         String generateTag(int id) {
-            return "[" + String.join(", ", this.myVar.get(id)) + "], [" + String.join(",", this.otherVar.get(id)) + "]";
+            return "[" + String.join(", ", this.myVar.get(id)).substring(1) + "], [" + String.join(",", this.otherVar.get(id)).substring(1) + "]";
         }
     }
 
@@ -298,6 +298,11 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
 
         GroupNode root = groupNodes.get(0);
 
+        // Remove root from others' children
+        for (int i = 1; i < groupNodes.size(); i++) {
+            groupNodes.get(i).children.remove(0);
+        }
+
         while (!root.children.isEmpty()) {
             // Get the next node
             Map.Entry<Integer, GroupNode> entry = root.children.entrySet().iterator().next();
@@ -315,12 +320,13 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
 
             g2 = childNode.dump();
 
-            query = "join (" + g1 + ", " + g2 + root.generateTag(childId) + ")";
+            query = "join (" + g1 + ", " + g2 + " " + root.generateTag(childId) + ")";
 
             // Absorb child into root
             for (GroupNode node : groupNodes.values()) {
                 node.children.remove(childId);
             }
+
             for (int key : childNode.children.keySet()) {
                 if (root.children.containsKey(key)) {
                     root.myVar.get(key).addAll(childNode.myVar.get(key));
