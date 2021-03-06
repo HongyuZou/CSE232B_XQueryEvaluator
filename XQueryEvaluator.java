@@ -4,6 +4,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import java.util.regex.*;
+import java.util.stream.Collectors;
 
 
 public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
@@ -99,8 +100,13 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
     
     @Override 
     public LinkedList<Node> visitXqClause(XQueryParser.XqClauseContext ctx) { 
-        // TODO:
-        String returnedQuery = generateRewriteJoin(ctx, ctx.forclause().xq().size());
+        // TODO: Diffrentiate the result for join-optimization
+        String returnedQuery = generateRewriteJoin(ctx);
+        if (returnedQuery == null) {
+            // No need to refactor
+        } else {
+            // Need rewrite
+        }
         HashMap<String, LinkedList<Node>> curContext = new HashMap<>(this.context);
         LinkedList<Node> res = new LinkedList<>();
         this.contextStack.push(curContext);
@@ -134,143 +140,201 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
         }
     }
 
-    private String generateRewriteJoin(XQueryParser.XqClauseContext ctx, int forVarsCnt) {
-        // group up vars for each xq in join clause
-        List<HashSet<String>> varGroups = new ArrayList<HashSet<String>>();
-        for(int i = 0; i < forVarsCnt; i ++) {
-            String xq = ctx.forclause().xq(i).getText();
-            String varName = ctx.forclause().var(i).getText();
-            String varParentName = xq.split("/")[0];
+    class Group {
+        Set<String> keys;
+        List<String> queries;
+        List<String> conds = new ArrayList<>();
+        final int id;
 
-            boolean added = false;
-            for(Set<String> group : varGroups) {
-                if(group.contains(varParentName)) {
-                    group.add(varName);
-                    added = true;
-                }
-            }
+        Group(String key, String query, int id) {
+            this.keys = Collections.singleton(key);
+            this.queries = Collections.singletonList(query);
+            this.id = id;
+        } 
 
-            // root parent
-            if(!added) {
-                HashSet<String> newGroup = new HashSet<>();
-                newGroup.add(varName);
-                varGroups.add(newGroup);
-            }
+        boolean contains(String var) {
+            return this.keys.contains(var);
         }
 
+        void add(String key, String query) {
+            this.keys.add(key);
+            this.queries.add(query);
+        }
+
+        void addCond(String cond) {
+            this.conds.add(cond);
+        }
+    }
+
+    class GroupNode {
+        Group value;
+        Map<Integer, GroupNode> children = new HashMap<>();
+        Map<Integer, List<String>> myVar = new HashMap<>();
+        Map<Integer, List<String>> otherVar = new HashMap<>();
+
+        GroupNode(Group g) {
+            this.value = g;
+        }
+
+        String dump() {
+            String query = "for " + String.join(", ", this.value.queries) + " ";
+            if (!this.value.conds.isEmpty()) {
+                query += "where " + String.join(", ", this.value.conds) + " ";
+            }
+            query += "return <tuple>{" + this.value.keys.stream().map(key -> String.format("<%s>{%s}</%s>", key.substring(1), key, key.substring(1))).collect(Collectors.joining()) + "}</tuple>";
+            return query;
+        }
+
+        String generateTag(int id) {
+            return "[" + String.join(", ", this.myVar.get(id)) + "], [" + String.join(",", this.otherVar.get(id)) + "]";
+        }
+    }
+
+    private String generateRewriteJoin(XQueryParser.XqClauseContext ctx) {
+        // Initialize groups and var map
+        List<Group> groups = new ArrayList<>();
+        Map<String, Integer> varMap = new HashMap<>();
+
+        groupForClause(ctx, groups, varMap);
+
         // check if there is need to join
-        if(varGroups.size() < 2) {
+        if(groups.size() < 2) {
             return null;
         }
 
-        // check cond in where clause
-        String[] whereConds = ctx.whereclause().cond().getText().split("and");
-
-        // $a eq $b
-        // $a eq "John"
-        String[][] whereCondsOperands = new String[whereConds.length][2];
-
-        // $a in which group, $b in which group
-        // [which condition] [int, int] -> [group index, group index], $a is in group 1 ...
-        int[][] opGroups = new int[whereConds.length][2];
-
-        int idx = 0;
-        for(String cond : whereConds) {
-            String[] operands = cond.split("=|eq");
-            whereCondsOperands[idx] = operands;
-            
-            int[] groupIdx = {-1, -1};
-            for(int i = 0; i < varGroups.size(); i ++) {
-                Set<String> group = varGroups.get(i);
-                if(group.contains(operands[0])) {
-                    groupIdx[0] = i;
-                }
-
-                if(group.contains(operands[1])) {
-                    groupIdx[1] = i;
-                }
-            }
-            opGroups[idx] = groupIdx;
-            idx ++;
+        // Make copy of groups into group node
+        Map<Integer, GroupNode> groupNodes = new HashMap<>();
+        for (int i = 0; i < groups.size(); i++) {
+            groupNodes.put(i, new GroupNode(groups.get(i)));
         }
 
-        return generateJoinQuery(ctx, varGroups, whereCondsOperands, opGroups);
+        groupWhereClause(ctx, groupNodes, varMap);
+
+        String returnedQuery = generateJoinQuery(ctx, groupNodes);
+
+        if (returnedQuery == null) {
+            return null;
+        }
+
+        return returnedQuery;
     }
 
-    private String generateJoinQuery(XQueryParser.XqClauseContext ctx, List<HashSet<String>> varGroups, 
-                                     String[][] whereCondsOperands, int[][] opGroups) {
-        String query = "for $tuple in join (";
-        
-        // for each join group
-        for(int i = 0; i < varGroups.size(); i ++) {
-            HashSet<String> curGroup = varGroups.get(i);
-            String returnTuple = "<tuple>{";
-            query += "for ";
+    private void groupForClause(XQueryParser.XqClauseContext ctx, List<Group> groups, Map<String, Integer> varMap) {
+        // group up vars for each xq in join clause
+        for(int i = 0; i < ctx.forclause().xq().size(); i++) {
+            String xq = ctx.forclause().xq(i).getText();
+            String leftVar = ctx.forclause().var(i).getText();
+            String rightVar = xq.split("/")[0];
 
-            // for var in xq
-            int count = 0;
-            for(int j = 0; j < ctx.forclause().var().size(); j ++) {
-                String var = ctx.forclause().var(j).getText();
-                String xq = ctx.forclause().xq(j).getText();
-
-                if(curGroup.contains(var)) {
-                    if(count != 0) {
-                        query += ",\n";
-                    }
-                    query += String.format("%s in %s", var, xq);
-                    count ++;
-
-                    // <tuple></tuple> in return for each group
-                    if(!returnTuple.equals("<tuple>{")) {
-                        returnTuple += ",";
-                    }
-                    returnTuple += String.format("<%s>{%s}</%s>", var.substring(1), var, var.substring(1));
-                }
+            // The start is not another var
+            if (rightVar.charAt(0) != '$') {
+                Group group = new Group(leftVar, xq, groups.size());
+                groups.add(group);
+                varMap.put(leftVar, group.id);
+                continue;
             }
-            returnTuple += "}</tuple>";
-            query += "\n";
+
+            Group group = groups.get(varMap.get(rightVar));
+            group.add(leftVar, xq);
+            varMap.put(leftVar, group.id);
+        }
+    }
+
+    private void groupWhereClause(XQueryParser.XqClauseContext ctx, Map<Integer, GroupNode> groupNodes, Map<String, Integer> varMap) {
+        // split out single condition
+        String[] whereConds = ctx.whereclause().cond().getText().split("and");
+
+        // for each condition
+        for (String cond : whereConds) {
+            String[] operands = cond.split("=|eq");
+
+            String leftOp = operands[0];
+            String rightOp = operands[1];
+
+            // If both operands are string literal, trival case
+            if (leftOp.charAt(0) != '$' && rightOp.charAt(0) != '$') {
+                continue;
+            }
             
-            // where
-            int cnt = 0;
-            for(int j = 0; j < whereCondsOperands.length; j ++) {
-                String[] ops = whereCondsOperands[j];
-                if(curGroup.contains(ops[0]) && opGroups[j][1] < 0) {
-                    if(cnt == 0) {
-                        query += "where ";
-                    }
+            // One operand is string literal, append the cond into the group directly
+            if (leftOp.charAt(0) != '$' || rightOp.charAt(0) != '$') {
+                if (leftOp.charAt(0) == '$') {
+                    groupNodes.get(varMap.get(leftOp)).value.addCond(cond);
+                } else {
+                    groupNodes.get(varMap.get(rightOp)).value.addCond(cond);
+                }
+                continue;
+            }
 
-                    if(cnt != 0) {
-                        query += "and ";
-                    }
-                    query += String.format("%s eq %s\n", ops[0], ops[1]);
-                    cnt ++;
+            // Both operands are var
+            Integer leftGroupId = varMap.get(leftOp);
+            Integer rightGroupId = varMap.get(rightOp);
+
+            GroupNode leftNode = groupNodes.get(leftGroupId);
+            GroupNode rightNode = groupNodes.get(rightGroupId);
+
+            // Add each other as children
+            leftNode.children.put(rightGroupId, rightNode);
+            rightNode.children.put(leftGroupId, leftNode);
+            
+            // Two group are not synced before
+            if (leftNode.myVar.get(rightGroupId) == null) {
+                leftNode.myVar.put(rightGroupId, Collections.singletonList(leftOp));
+                leftNode.otherVar.put(rightGroupId, Collections.singletonList(rightOp));
+                rightNode.myVar.put(leftGroupId, Collections.singletonList(rightOp));
+                rightNode.otherVar.put(leftGroupId, Collections.singletonList(leftOp));
+            } else {
+                leftNode.myVar.get(rightGroupId).add(leftOp);
+                leftNode.otherVar.get(rightGroupId).add(rightOp);
+                rightNode.myVar.get(leftGroupId).add(rightOp);
+                rightNode.otherVar.get(leftGroupId).add(leftOp);
+            }
+        }
+    }
+
+    private String generateJoinQuery(XQueryParser.XqClauseContext ctx, Map<Integer, GroupNode> groupNodes) {
+
+        String query = "";
+
+        GroupNode root = groupNodes.get(0);
+
+        while (!root.children.isEmpty()) {
+            // Get the next node
+            Map.Entry<Integer, GroupNode> entry = root.children.entrySet().iterator().next();
+            Integer childId = entry.getKey();
+            GroupNode childNode = entry.getValue();
+
+            String g1;
+            String g2;
+
+            if (query.isEmpty()) {
+                g1 = root.dump();
+            } else {
+                g1 = query;
+            }
+
+            g2 = childNode.dump();
+
+            query = "join (" + g1 + ", " + g2 + root.generateTag(childId) + ")";
+
+            // Absorb child into root
+            for (GroupNode node : groupNodes.values()) {
+                node.children.remove(childId);
+            }
+            for (int key : childNode.children.keySet()) {
+                if (root.children.containsKey(key)) {
+                    root.myVar.get(key).addAll(childNode.myVar.get(key));
+                    root.otherVar.get(key).addAll(childNode.otherVar.get(key));
+                } else {
+                    root.children.put(key, childNode.children.get(key));
+                    root.myVar.put(key, childNode.myVar.get(key));
+                    root.otherVar.put(key, childNode.otherVar.get(key));
                 }
             }
-
-            // return
-            query += String.format("return %s,\n", returnTuple);
         }
 
-        // vars: [sp], [sp]
-        String vars1 = "";
-        String vars2 = "";
-        for(int i = 0; i < whereCondsOperands.length; i ++) {
-            String[] ops = whereCondsOperands[i];
-            int group1 = opGroups[i][0];
-            int group2 = opGroups[i][1];
+        query = "for $tuple in " + query;
 
-            if(group1 < 0 || group2 < 0) {continue;}
-            if(group2 > group1) {
-                vars1 += ops[0].substring(1) + ",";
-                vars2 += ops[1].substring(1) + ",";
-            } else {
-                vars2 += ops[0].substring(1) + ",";
-                vars1 += ops[1].substring(1) + ",";
-            }
-        }
-        vars1 = String.format("[%s]", vars1.substring(0, vars1.length() - 1));
-        vars2 = String.format("[%s]", vars2.substring(0, vars2.length() - 1));
-        query += String.format("%s, %s)", vars1, vars2) + "\n";
 
         // return
         query += "return ";
@@ -281,7 +345,6 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
             // Fetching Group from String
             String varName = regexMatcher.group(0);
             String varNameWithoutDollar = varName.substring(1);
-            //System.out.println(varName + " " + String.format("$tuple/%s/*", varName));
             returnClause = returnClause.replaceAll("\\" + varName, 
                                         String.format("\\$tuple/%s/*", varNameWithoutDollar));
         }
@@ -324,7 +387,8 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
         return visit(ctx.xq());
     }
 
-    @Override public LinkedList<Node> visitJoinclause(XQueryParser.JoinclauseContext ctx) { 
+    @Override
+    public LinkedList<Node> visitJoinclause(XQueryParser.JoinclauseContext ctx) { 
         // result tuples
         LinkedList<Node> res = new LinkedList<>();
 
