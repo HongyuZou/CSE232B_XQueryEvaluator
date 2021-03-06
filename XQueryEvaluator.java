@@ -181,12 +181,13 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
             if (!this.value.conds.isEmpty()) {
                 query += "where " + String.join(", ", this.value.conds) + " ";
             }
-            query += "return <tuple>{" + this.value.keys.stream().map(key -> String.format("<%s>{%s}</%s>", key.substring(1), key, key.substring(1))).collect(Collectors.joining()) + "}</tuple>";
+            query += "return <tuple>{" + this.value.keys.stream().map(key -> String.format("<%s>{%s}</%s>", key.substring(1), key, key.substring(1))).collect(Collectors.joining(", ")) + "}</tuple>";
             return query;
         }
 
         String generateTag(int id) {
-            return "[" + String.join(", ", this.myVar.get(id)).substring(1) + "], [" + String.join(",", this.otherVar.get(id)).substring(1) + "]";
+            return "["+ this.myVar.get(id).stream().map(s -> s.substring(1)).collect(Collectors.joining(", ")) + "], [" + 
+                        this.otherVar.get(id).stream().map(s -> s.substring(1)).collect(Collectors.joining(", ")) + "]";
         }
     }
 
@@ -259,9 +260,9 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
             // One operand is string literal, append the cond into the group directly
             if (leftOp.charAt(0) != '$' || rightOp.charAt(0) != '$') {
                 if (leftOp.charAt(0) == '$') {
-                    groupNodes.get(varMap.get(leftOp)).value.addCond(cond);
+                    groupNodes.get(varMap.get(leftOp)).value.addCond(leftOp + " eq " + rightOp);//cond);
                 } else {
-                    groupNodes.get(varMap.get(rightOp)).value.addCond(cond);
+                    groupNodes.get(varMap.get(rightOp)).value.addCond(leftOp + " eq " + rightOp);//cond);
                 }
                 continue;
             }
@@ -279,10 +280,10 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
             
             // Two group are not synced before
             if (leftNode.myVar.get(rightGroupId) == null) {
-                leftNode.myVar.put(rightGroupId, Collections.singletonList(leftOp));
-                leftNode.otherVar.put(rightGroupId, Collections.singletonList(rightOp));
-                rightNode.myVar.put(leftGroupId, Collections.singletonList(rightOp));
-                rightNode.otherVar.put(leftGroupId, Collections.singletonList(leftOp));
+                leftNode.myVar.put(rightGroupId, new ArrayList<>(Arrays.asList(leftOp)));
+                leftNode.otherVar.put(rightGroupId, new ArrayList<>(Arrays.asList(rightOp)));
+                rightNode.myVar.put(leftGroupId, new ArrayList<>(Arrays.asList(rightOp)));
+                rightNode.otherVar.put(leftGroupId, new ArrayList<>(Arrays.asList(leftOp)));
             } else {
                 leftNode.myVar.get(rightGroupId).add(leftOp);
                 leftNode.otherVar.get(rightGroupId).add(rightOp);
@@ -320,7 +321,7 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
 
             g2 = childNode.dump();
 
-            query = "join (" + g1 + ", " + g2 + " " + root.generateTag(childId) + ")";
+            query = "join (" + g1 + ", " + g2 + ", " + root.generateTag(childId) + ")";
 
             // Absorb child into root
             for (GroupNode node : groupNodes.values()) {
@@ -343,14 +344,15 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
 
 
         // return
-        query += "return ";
+        query += " return ";
         String returnClause = ctx.returnclause().xq().getText();
-        Pattern regex = Pattern.compile("\\$[a-zA-Z]+");
+        Pattern regex = Pattern.compile("\\$[a-zA-Z0-9]+");
 		Matcher regexMatcher = regex.matcher(returnClause);
         while (regexMatcher.find()) {
             // Fetching Group from String
             String varName = regexMatcher.group(0);
             String varNameWithoutDollar = varName.substring(1);
+            
             returnClause = returnClause.replaceAll("\\" + varName, 
                                         String.format("\\$tuple/%s/*", varNameWithoutDollar));
         }
