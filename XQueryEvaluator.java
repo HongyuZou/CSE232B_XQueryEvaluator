@@ -68,9 +68,17 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
 
     @Override
     public LinkedList<Node> visitXqConcat(XQueryParser.XqConcatContext ctx) {
+        System.out.println("concat string: " + ctx.getText());
         Set<Node> res = new HashSet<>();
         res.addAll(visit(ctx.xq(0)));
         res.addAll(visit(ctx.xq(1)));
+        
+        // if(ctx.xq(0).getText().equals("$tuple/sp/*/text()")) {
+           
+            // for(Node elementNode : visit(ctx.xq(1))) {
+            //     System.out.println("123: " + elementNode.getTextContent());
+            // }
+        //}
         return new LinkedList<>(res);
     }
 
@@ -90,6 +98,11 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
     @Override 
     public LinkedList<Node> visitXqTag(XQueryParser.XqTagContext ctx) { 
         String tagName = ctx.NAME(0).getText();
+        
+        if(tagName.equals("act")) {
+            System.out.println("tag : " + ctx.xq().getText());
+        }
+
         LinkedList<Node> res = visit(ctx.xq());
         Node tagNode = output.createElement(tagName);
         for(Node elementNode : res) {
@@ -101,12 +114,17 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
     @Override 
     public LinkedList<Node> visitXqClause(XQueryParser.XqClauseContext ctx) { 
         // TODO: Diffrentiate the result for join-optimization
-        String returnedQuery = generateRewriteJoin(ctx);
-        if (returnedQuery == null) {
-            // No need to refactor
-        } else {
-            // Need rewrite
+        try{
+            String returnedQuery = generateRewriteJoin(ctx);
+            if (returnedQuery != null) {
+                // Need rewrite
+                System.out.println("Rewritten Query: \n" + returnedQuery + "\n");
+                return XQueryMain.evaluateXQueryJoin(returnedQuery);
+            } 
+        }  catch(Exception e) {
+            System.err.println(e);
         }
+
         HashMap<String, LinkedList<Node>> curContext = new HashMap<>(this.context);
         LinkedList<Node> res = new LinkedList<>();
         this.contextStack.push(curContext);
@@ -358,7 +376,6 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
         }
         
         query += returnClause;
-        System.out.println(query);
         return query;
     }
 
@@ -392,6 +409,7 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
 
     @Override
     public LinkedList<Node> visitReturnclause(XQueryParser.ReturnclauseContext ctx) { 
+        System.out.println("return: " + ctx.getText());
         return visit(ctx.xq());
     }
 
@@ -442,7 +460,8 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
                     for(Node ele : getAllChildren(node)) {
                         outputNode.appendChild(output.importNode(ele, true));
                     }
-
+                    
+                    System.out.println(outputNode.getTextContent());
                     res.add(outputNode);
                 }
             }

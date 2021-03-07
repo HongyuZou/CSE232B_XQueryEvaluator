@@ -18,8 +18,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Node;
 
 public class XQueryMain {
-    public static void trimWhitespace(Node node)
-    {
+    public static void trimWhitespace(Node node) {
         NodeList children = node.getChildNodes();
         for(int i = 0; i < children.getLength(); ++i) {
             Node child = children.item(i);
@@ -28,6 +27,25 @@ public class XQueryMain {
             }
             trimWhitespace(child);
         }
+    }
+
+    private static XQueryParser generateParser(String input) {
+        CharStream charStream = CharStreams.fromString(input);
+        XQueryLexer lexer = new XQueryLexer(charStream);
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        XQueryParser parser = new XQueryParser(tokenStream);
+        parser.removeErrorListeners();
+        return parser;
+    }
+
+    public static LinkedList<Node> evaluateXQueryJoin(String join) throws Exception {
+        XQueryParser parser = generateParser(join);
+        ParseTree parseTree = parser.xq();
+        XQueryEvaluator evaluator = new XQueryEvaluator();
+        DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = builderFactory.newDocumentBuilder();
+        evaluator.output = builder.newDocument();
+        return evaluator.visit(parseTree);
     }
 
     public static void main(String[] args) throws Exception {
@@ -43,8 +61,9 @@ public class XQueryMain {
         DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = builderFactory.newDocumentBuilder();
         evaluator.output = builder.newDocument();
-        
+       
         List<Node> res = evaluator.visit(parseTree);
+
         Document resDoc = DocumentBuilderFactory
                           .newInstance()
                           .newDocumentBuilder()
