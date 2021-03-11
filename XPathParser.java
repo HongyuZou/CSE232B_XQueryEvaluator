@@ -31,7 +31,7 @@ public class XPathParser extends Parser {
 	private static String[] makeLiteralNames() {
 		return new String[] {
 			null, "'(\"'", "'\")'", "'/'", "'//'", "'*'", "'.'", "'..'", "'text()'", 
-			"'@'", "'('", "')'", "'['", "']'", "','", "'='", "'eq'", "'and'", "'or'", 
+			"'@'", "'('", "')'", "','", "'['", "']'", "'='", "'eq'", "'and'", "'or'", 
 			"'not'"
 		};
 	}
@@ -526,38 +526,38 @@ public class XPathParser extends Parser {
 					switch ( getInterpreter().adaptivePredict(_input,2,_ctx) ) {
 					case 1:
 						{
-						_localctx = new DirectChildRPContext(new RpContext(_parentctx, _parentState));
+						_localctx = new ConcatContext(new RpContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_rp);
 						setState(34);
 						if (!(precpred(_ctx, 4))) throw new FailedPredicateException(this, "precpred(_ctx, 4)");
 						setState(35);
-						match(T__2);
+						match(T__11);
 						setState(36);
 						rp(5);
 						}
 						break;
 					case 2:
 						{
-						_localctx = new IndirectChildRPContext(new RpContext(_parentctx, _parentState));
+						_localctx = new DirectChildRPContext(new RpContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_rp);
 						setState(37);
 						if (!(precpred(_ctx, 3))) throw new FailedPredicateException(this, "precpred(_ctx, 3)");
 						setState(38);
-						match(T__3);
+						match(T__2);
 						setState(39);
 						rp(4);
 						}
 						break;
 					case 3:
 						{
-						_localctx = new ConcatContext(new RpContext(_parentctx, _parentState));
+						_localctx = new IndirectChildRPContext(new RpContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_rp);
 						setState(40);
-						if (!(precpred(_ctx, 1))) throw new FailedPredicateException(this, "precpred(_ctx, 1)");
+						if (!(precpred(_ctx, 2))) throw new FailedPredicateException(this, "precpred(_ctx, 2)");
 						setState(41);
-						match(T__13);
+						match(T__3);
 						setState(42);
-						rp(2);
+						rp(3);
 						}
 						break;
 					case 4:
@@ -565,13 +565,13 @@ public class XPathParser extends Parser {
 						_localctx = new FilterContext(new RpContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_rp);
 						setState(43);
-						if (!(precpred(_ctx, 2))) throw new FailedPredicateException(this, "precpred(_ctx, 2)");
+						if (!(precpred(_ctx, 1))) throw new FailedPredicateException(this, "precpred(_ctx, 1)");
 						setState(44);
-						match(T__11);
+						match(T__12);
 						setState(45);
 						f(0);
 						setState(46);
-						match(T__12);
+						match(T__13);
 						}
 						break;
 					}
@@ -971,9 +971,9 @@ public class XPathParser extends Parser {
 		case 1:
 			return precpred(_ctx, 3);
 		case 2:
-			return precpred(_ctx, 1);
-		case 3:
 			return precpred(_ctx, 2);
+		case 3:
+			return precpred(_ctx, 1);
 		}
 		return true;
 	}
@@ -1001,9 +1001,9 @@ public class XPathParser extends Parser {
 		"\2\2\26\27\b\3\1\2\27#\7\30\2\2\30#\7\7\2\2\31#\7\b\2\2\32#\7\t\2\2\33"+
 		"#\7\n\2\2\34\35\7\13\2\2\35#\7\30\2\2\36\37\7\f\2\2\37 \5\4\3\2 !\7\r"+
 		"\2\2!#\3\2\2\2\"\26\3\2\2\2\"\30\3\2\2\2\"\31\3\2\2\2\"\32\3\2\2\2\"\33"+
-		"\3\2\2\2\"\34\3\2\2\2\"\36\3\2\2\2#\64\3\2\2\2$%\f\6\2\2%&\7\5\2\2&\63"+
-		"\5\4\3\7\'(\f\5\2\2()\7\6\2\2)\63\5\4\3\6*+\f\3\2\2+,\7\20\2\2,\63\5\4"+
-		"\3\4-.\f\4\2\2./\7\16\2\2/\60\5\6\4\2\60\61\7\17\2\2\61\63\3\2\2\2\62"+
+		"\3\2\2\2\"\34\3\2\2\2\"\36\3\2\2\2#\64\3\2\2\2$%\f\6\2\2%&\7\16\2\2&\63"+
+		"\5\4\3\7\'(\f\5\2\2()\7\5\2\2)\63\5\4\3\6*+\f\4\2\2+,\7\6\2\2,\63\5\4"+
+		"\3\5-.\f\3\2\2./\7\17\2\2/\60\5\6\4\2\60\61\7\20\2\2\61\63\3\2\2\2\62"+
 		"$\3\2\2\2\62\'\3\2\2\2\62*\3\2\2\2\62-\3\2\2\2\63\66\3\2\2\2\64\62\3\2"+
 		"\2\2\64\65\3\2\2\2\65\5\3\2\2\2\66\64\3\2\2\2\678\b\4\1\28P\5\4\3\29:"+
 		"\5\4\3\2:;\7\21\2\2;<\5\4\3\2<P\3\2\2\2=>\5\4\3\2>?\7\21\2\2?@\7\31\2"+

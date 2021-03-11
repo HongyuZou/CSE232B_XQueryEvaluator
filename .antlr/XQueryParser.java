@@ -1305,38 +1305,38 @@ public class XQueryParser extends Parser {
 					switch ( getInterpreter().adaptivePredict(_input,14,_ctx) ) {
 					case 1:
 						{
-						_localctx = new DirectChildRPContext(new RpContext(_parentctx, _parentState));
+						_localctx = new ConcatContext(new RpContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_rp);
 						setState(213);
 						if (!(precpred(_ctx, 4))) throw new FailedPredicateException(this, "precpred(_ctx, 4)");
 						setState(214);
-						match(T__7);
+						match(T__2);
 						setState(215);
 						rp(5);
 						}
 						break;
 					case 2:
 						{
-						_localctx = new IndirectChildRPContext(new RpContext(_parentctx, _parentState));
+						_localctx = new DirectChildRPContext(new RpContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_rp);
 						setState(216);
 						if (!(precpred(_ctx, 3))) throw new FailedPredicateException(this, "precpred(_ctx, 3)");
 						setState(217);
-						match(T__8);
+						match(T__7);
 						setState(218);
 						rp(4);
 						}
 						break;
 					case 3:
 						{
-						_localctx = new ConcatContext(new RpContext(_parentctx, _parentState));
+						_localctx = new IndirectChildRPContext(new RpContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_rp);
 						setState(219);
-						if (!(precpred(_ctx, 1))) throw new FailedPredicateException(this, "precpred(_ctx, 1)");
+						if (!(precpred(_ctx, 2))) throw new FailedPredicateException(this, "precpred(_ctx, 2)");
 						setState(220);
-						match(T__2);
+						match(T__8);
 						setState(221);
-						rp(2);
+						rp(3);
 						}
 						break;
 					case 4:
@@ -1344,7 +1344,7 @@ public class XQueryParser extends Parser {
 						_localctx = new FilterContext(new RpContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_rp);
 						setState(222);
-						if (!(precpred(_ctx, 2))) throw new FailedPredicateException(this, "precpred(_ctx, 2)");
+						if (!(precpred(_ctx, 1))) throw new FailedPredicateException(this, "precpred(_ctx, 1)");
 						setState(223);
 						match(T__25);
 						setState(224);
@@ -1657,9 +1657,9 @@ public class XQueryParser extends Parser {
 		case 6:
 			return precpred(_ctx, 3);
 		case 7:
-			return precpred(_ctx, 1);
-		case 8:
 			return precpred(_ctx, 2);
+		case 8:
+			return precpred(_ctx, 1);
 		}
 		return true;
 	}
@@ -1743,9 +1743,9 @@ public class XQueryParser extends Parser {
 		"\u00d3\5\26\f\2\u00d3\u00d4\7\4\2\2\u00d4\u00d6\3\2\2\2\u00d5\u00c9\3"+
 		"\2\2\2\u00d5\u00cb\3\2\2\2\u00d5\u00cc\3\2\2\2\u00d5\u00cd\3\2\2\2\u00d5"+
 		"\u00ce\3\2\2\2\u00d5\u00cf\3\2\2\2\u00d5\u00d1\3\2\2\2\u00d6\u00e7\3\2"+
-		"\2\2\u00d7\u00d8\f\6\2\2\u00d8\u00d9\7\n\2\2\u00d9\u00e6\5\26\f\7\u00da"+
-		"\u00db\f\5\2\2\u00db\u00dc\7\13\2\2\u00dc\u00e6\5\26\f\6\u00dd\u00de\f"+
-		"\3\2\2\u00de\u00df\7\5\2\2\u00df\u00e6\5\26\f\4\u00e0\u00e1\f\4\2\2\u00e1"+
+		"\2\2\u00d7\u00d8\f\6\2\2\u00d8\u00d9\7\5\2\2\u00d9\u00e6\5\26\f\7\u00da"+
+		"\u00db\f\5\2\2\u00db\u00dc\7\n\2\2\u00dc\u00e6\5\26\f\6\u00dd\u00de\f"+
+		"\4\2\2\u00de\u00df\7\13\2\2\u00df\u00e6\5\26\f\5\u00e0\u00e1\f\3\2\2\u00e1"+
 		"\u00e2\7\34\2\2\u00e2\u00e3\5\30\r\2\u00e3\u00e4\7\35\2\2\u00e4\u00e6"+
 		"\3\2\2\2\u00e5\u00d7\3\2\2\2\u00e5\u00da\3\2\2\2\u00e5\u00dd\3\2\2\2\u00e5"+
 		"\u00e0\3\2\2\2\u00e6\u00e9\3\2\2\2\u00e7\u00e5\3\2\2\2\u00e7\u00e8\3\2"+

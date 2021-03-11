@@ -68,7 +68,6 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
 
     @Override
     public LinkedList<Node> visitXqConcat(XQueryParser.XqConcatContext ctx) {
-        System.out.println("concat string: " + ctx.getText());
         Set<Node> res = new HashSet<>();
         res.addAll(visit(ctx.xq(0)));
         res.addAll(visit(ctx.xq(1)));
@@ -91,10 +90,6 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
     @Override 
     public LinkedList<Node> visitXqTag(XQueryParser.XqTagContext ctx) { 
         String tagName = ctx.NAME(0).getText();
-        if(tagName.equals("act")) {
-            System.out.println("tag : " + ctx.xq().getText());
-        }
-
         LinkedList<Node> res = visit(ctx.xq());
         Node tagNode = output.createElement(tagName);
 
@@ -142,7 +137,6 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
 
         // recursively check for variables
         LinkedList<Node> curRes = visit(ctx.forclause().xq(varIdx));
-        System.out.println(ctx.forclause().xq(varIdx).getText());
         for(Node node : curRes) {
             HashMap<String, LinkedList<Node>> curContext = new HashMap<>(this.context);
             this.contextStack.push(curContext);
@@ -407,7 +401,6 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
 
     @Override
     public LinkedList<Node> visitReturnclause(XQueryParser.ReturnclauseContext ctx) { 
-        System.out.println("return: " + ctx.getText());
         return visit(ctx.xq());
     }
 
@@ -459,7 +452,6 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
                         outputNode.appendChild(output.importNode(ele, true));
                     }
                     
-                    System.out.println(outputNode.getTextContent());
                     res.add(outputNode);
                 }
             }

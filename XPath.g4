@@ -11,10 +11,10 @@ rp : NAME                     #tagName
    | 'text()'                 #text
    | '@' NAME                 #attr
    | '(' rp ')'               #parenRP
+   | rp ',' rp                #concat
    | rp '/' rp                #directChildRP
    | rp '//' rp               #indirectChildRP
    | rp '[' f ']'             #filter
-   | rp ',' rp                #concat
    ;
 
 f : rp                        #rpFt
