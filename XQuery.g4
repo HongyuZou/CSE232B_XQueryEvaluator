@@ -6,9 +6,9 @@ xq : var                                                         #xqVar
    | ap                                                          #xqAp
    | '(' xq ')'                                                  #xqParen
    | xq ',' xq                                                   #xqConcat
+   | '<'NAME'>' '{' xq '}' '<' '/' NAME'>'                       #xqTag
    | xq '/' rp                                                   #xqDirectChild
    | xq '//' rp                                                  #xqIndirectChild
-   | '<'NAME'>' '{' xq '}' '<' '/' NAME'>'                       #xqTag
    | forclause letclause? whereclause? returnclause              #xqClause
    | letclause xq                                                #xqLet
    | joinclause                                                  #xqJoin

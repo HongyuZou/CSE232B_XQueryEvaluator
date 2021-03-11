@@ -72,13 +72,6 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
         Set<Node> res = new HashSet<>();
         res.addAll(visit(ctx.xq(0)));
         res.addAll(visit(ctx.xq(1)));
-        
-        // if(ctx.xq(0).getText().equals("$tuple/sp/*/text()")) {
-           
-            // for(Node elementNode : visit(ctx.xq(1))) {
-            //     System.out.println("123: " + elementNode.getTextContent());
-            // }
-        //}
         return new LinkedList<>(res);
     }
 
@@ -98,13 +91,13 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
     @Override 
     public LinkedList<Node> visitXqTag(XQueryParser.XqTagContext ctx) { 
         String tagName = ctx.NAME(0).getText();
-        
         if(tagName.equals("act")) {
             System.out.println("tag : " + ctx.xq().getText());
         }
 
         LinkedList<Node> res = visit(ctx.xq());
         Node tagNode = output.createElement(tagName);
+
         for(Node elementNode : res) {
             tagNode.appendChild(output.importNode(elementNode, true));
         }
@@ -149,10 +142,16 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
 
         // recursively check for variables
         LinkedList<Node> curRes = visit(ctx.forclause().xq(varIdx));
+        System.out.println(ctx.forclause().xq(varIdx).getText());
         for(Node node : curRes) {
             HashMap<String, LinkedList<Node>> curContext = new HashMap<>(this.context);
             this.contextStack.push(curContext);
-            this.context.put(ctx.forclause().var(varIdx).getText(), new LinkedList<>(Arrays.asList(node)));
+            //this.context.put(ctx.forclause().var(varIdx).getText(), new LinkedList<>(Arrays.asList(node)));
+            String varName = ctx.forclause().var(varIdx).getText();
+            if(this.context.get(varName) == null) {
+                this.context.put(varName, new LinkedList<>());
+            }
+            this.context.get(varName).add(node);
             visitXqClauseHelper(res, varIdx + 1, forVarsCnt, ctx);
             this.context = this.contextStack.pop();
         }
@@ -359,7 +358,6 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
         }
 
         query = "for $tuple in " + query;
-
 
         // return
         query += " return ";
