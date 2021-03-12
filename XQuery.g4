@@ -5,13 +5,13 @@ xq : var                                                         #xqVar
    | STR                                                         #xqStr
    | ap                                                          #xqAp
    | '(' xq ')'                                                  #xqParen
-   | xq ',' xq                                                   #xqConcat
    | '<'NAME'>' '{' xq '}' '<' '/' NAME'>'                       #xqTag
    | xq '/' rp                                                   #xqDirectChild
    | xq '//' rp                                                  #xqIndirectChild
    | forclause letclause? whereclause? returnclause              #xqClause
    | letclause xq                                                #xqLet
    | joinclause                                                  #xqJoin
+   | xq ',' xq                                                   #xqConcat
    ;
 
 forclause: 'for' var 'in' xq (',' var 'in' xq)*;
