@@ -140,12 +140,7 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
         for(Node node : curRes) {
             HashMap<String, LinkedList<Node>> curContext = new HashMap<>(this.context);
             this.contextStack.push(curContext);
-            //this.context.put(ctx.forclause().var(varIdx).getText(), new LinkedList<>(Arrays.asList(node)));
-            String varName = ctx.forclause().var(varIdx).getText();
-            if(this.context.get(varName) == null) {
-                this.context.put(varName, new LinkedList<>());
-            }
-            this.context.get(varName).add(node);
+            this.context.put(ctx.forclause().var(varIdx).getText(), new LinkedList<>(Arrays.asList(node)));
             visitXqClauseHelper(res, varIdx + 1, forVarsCnt, ctx);
             this.context = this.contextStack.pop();
         }

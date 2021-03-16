@@ -63,29 +63,23 @@ public class XQueryMain {
         evaluator.output = builder.newDocument();
        
         List<Node> res = evaluator.visit(parseTree);
-
-        Document resDoc = DocumentBuilderFactory
-                          .newInstance()
-                          .newDocumentBuilder()
-                          .newDocument();
         
         // create result node
         Document output = evaluator.output;
-        Node result = output.createElement("query_result");
+        Node outputNode = output.createElement("query_result");
         for(Node node : res) {
             Node importedNode = output.importNode(node, true);
-            result.appendChild(importedNode);
+            outputNode.appendChild(importedNode);
         }
         
         // Use a Transformer for output
-        Node outputNode = resDoc.importNode(result, true);
         trimWhitespace(outputNode);
-        resDoc.appendChild(outputNode);
+        output.appendChild(outputNode);
         TransformerFactory tFactory = TransformerFactory.newInstance();
         Transformer transformer = tFactory.newTransformer();
         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 
-        DOMSource source = new DOMSource(resDoc);
+        DOMSource source = new DOMSource(output);
         StreamResult streamRes = new StreamResult(System.out);
         transformer.transform(source, streamRes);
     }
