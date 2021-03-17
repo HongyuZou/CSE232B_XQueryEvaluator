@@ -102,16 +102,16 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
     @Override 
     public LinkedList<Node> visitXqClause(XQueryParser.XqClauseContext ctx) { 
         // TODO: Diffrentiate the result for join-optimization
-        // try{
-        //     String returnedQuery = generateRewriteJoin(ctx);
-        //     if (returnedQuery != null) {
-        //         // Need rewrite
-        //         System.out.println("Rewritten Query: \n" + returnedQuery + "\n");
-        //         return XQueryMain.evaluateXQueryJoin(returnedQuery);
-        //     } 
-        // }  catch(Exception e) {
-        //     System.err.println(e);
-        // }
+        try{
+            String returnedQuery = generateRewriteJoin(ctx);
+            if (returnedQuery != null) {
+                // Need rewrite
+                System.out.println("Rewritten Query: \n" + returnedQuery + "\n");
+                return XQueryMain.evaluateXQueryJoin(returnedQuery);
+            } 
+        }  catch(Exception e) {
+            System.err.println(e);
+        }
 
         HashMap<String, LinkedList<Node>> curContext = new HashMap<>(this.context);
         LinkedList<Node> res = new LinkedList<>();
@@ -417,8 +417,8 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
             LinkedList<Node> tupleElements = getAllChildren(tuple1);
             String key = "";
 
-            for(Node ele1 : tupleElements) {
-                for(int i = 0; i < varArr1.NAME().size(); i ++) {
+            for(int i = 0; i < varArr1.NAME().size(); i ++) {
+                for(Node ele1 : tupleElements) {  
                     String varName = varArr1.NAME(i).getText();
                     String nodeName = ele1.getNodeName();
                     
@@ -462,8 +462,9 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
             String key = "";
             LinkedList<Node> tupleElements = getAllChildren(tuple);
             
-            for(Node ele : tupleElements) {
-                for(int i = 0; i < varArr.NAME().size(); i ++) {
+
+            for(int i = 0; i < varArr.NAME().size(); i ++) {
+                for(Node ele : tupleElements) {
                     String varName = varArr.NAME(i).getText();
                     String nodeName = ele.getNodeName();
                     
