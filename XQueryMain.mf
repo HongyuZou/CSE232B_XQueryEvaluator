@@ -1,3 +1,2 @@
 Manifest-Version: 1.0
 Main-Class: XQueryMain
-Class-Path: /usr/local/lib/antlr-4.9-complete.jar
