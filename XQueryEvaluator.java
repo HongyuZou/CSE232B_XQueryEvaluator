@@ -102,16 +102,16 @@ public class XQueryEvaluator extends XQueryBaseVisitor<LinkedList<Node>>{
     @Override 
     public LinkedList<Node> visitXqClause(XQueryParser.XqClauseContext ctx) { 
         // TODO: Diffrentiate the result for join-optimization
-        try{
-            String returnedQuery = generateRewriteJoin(ctx);
-            if (returnedQuery != null) {
-                // Need rewrite
-                System.out.println("Rewritten Query: \n" + returnedQuery + "\n");
-                return XQueryMain.evaluateXQueryJoin(returnedQuery);
-            } 
-        }  catch(Exception e) {
-            System.err.println(e);
-        }
+        // try{
+        //     String returnedQuery = generateRewriteJoin(ctx);
+        //     if (returnedQuery != null) {
+        //         // Need rewrite
+        //         System.out.println("Rewritten Query: \n" + returnedQuery + "\n");
+        //         return XQueryMain.evaluateXQueryJoin(returnedQuery);
+        //     } 
+        // }  catch(Exception e) {
+        //     System.err.println(e);
+        // }
 
         HashMap<String, LinkedList<Node>> curContext = new HashMap<>(this.context);
         LinkedList<Node> res = new LinkedList<>();
